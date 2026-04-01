@@ -92,3 +92,33 @@ img {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+/* Responsive Helpers */
+.admin-grid-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.admin-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.admin-orders-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-surface-container-high);
+  padding-bottom: 16px;
+}
+
+@media (max-width: 1024px) {
+  .admin-grid-metrics {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .admin-orders-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useProducts } from '../hooks/useProducts';
 import { useOrders } from '../hooks/useOrders';
 import { db, ref, get, set, child } from '../config/firebase';
-import { Package, Plus, Trash2, Edit, Star, DollarSign, Image as ImageIcon, X, CheckCircle, Clock, Settings, LogOut, BarChart2, ArrowDown, ArrowUp } from 'lucide-react';
+import { Package, Plus, Trash2, Edit, Star, DollarSign, Image as ImageIcon, X, CheckCircle, Clock, Settings, LogOut, BarChart2, ArrowDown, ArrowUp, Menu } from 'lucide-react';
 
 function AdminDashboard() {
   const { products, loading: productsLoading, deleteProduct, updateProductStatus, addProduct, editProduct, updateProductOrder } = useProducts();
@@ -13,6 +13,19 @@ function AdminDashboard() {
   
   // Navigation
   const [activeTab, setActiveTab] = useState('products'); // 'products' | 'orders' | 'settings'
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar on tab change (mobile)
+  useEffect(() => {
+    if (isMobile) setIsSidebarOpen(false);
+  }, [activeTab]);
 
   const getAz = (str) => {
     if (!str) return '';
@@ -327,11 +340,12 @@ function AdminDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-surface-container-low)' }}>
-        <div style={{ backgroundColor: 'var(--color-surface)', padding: '40px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(56,69,50,0.1)', width: '100%', maxWidth: '400px' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-surface-container-low)', padding: '20px' }}>
+        <div style={{ backgroundColor: 'var(--color-surface)', padding: isMobile ? '32px 20px' : '40px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(56,69,50,0.1)', width: '100%', maxWidth: '400px' }}>
           <h1 style={{ fontSize: '24px', fontFamily: 'var(--font-serif)', color: 'var(--color-primary)', textAlign: 'center', marginBottom: '8px' }}>Admin Girişi</h1>
+          <p style={{ textAlign: 'center', color: 'var(--color-outline)', fontSize: '14px', marginBottom: '24px' }}>Xoş gəlmisiniz, zəhmət olmasa daxil olun.</p>
           <form onSubmit={handleLogin}>
-            <input type="password" placeholder="Şifrənizi daxil edin" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)', marginBottom: '24px', fontSize: '16px' }} />
+            <input type="password" placeholder="Şifrənizi daxil edin" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)', marginBottom: '24px', fontSize: '16px', outline: 'none' }} />
             <button type="submit" style={{ width: '100%', padding: '16px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}>Daxil Ol</button>
           </form>
         </div>
@@ -343,33 +357,81 @@ function AdminDashboard() {
   const filteredProducts = catFilter === 'all' ? products : products.filter(p => p.category === catFilter);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-background)' }}>
-      {/* Sidebar */}
-      <div style={{ width: '260px', backgroundColor: 'var(--color-surface-container-low)', padding: '32px 20px', borderRight: '1px solid var(--color-surface-container-high)' }}>
-        <h2 style={{ fontSize: '20px', fontFamily: 'var(--font-serif)', color: 'var(--color-primary)', fontWeight: 'bold', marginBottom: '40px', paddingLeft: '8px' }}>Velizade Admin</h2>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', backgroundColor: 'var(--color-background)' }}>
+      
+      {/* Mobile Top Header */}
+      {isMobile && (
+        <header style={{
+          position: 'sticky', top: 0, left: 0, right: 0, height: '64px',
+          backgroundColor: 'rgba(252, 249, 243, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 20px',
+          borderBottom: '1px solid var(--color-surface-container-high)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button onClick={() => setIsSidebarOpen(true)}>
+              <Menu color="var(--color-primary)" size={24} />
+            </button>
+            <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', fontFamily: 'var(--font-serif)' }}>Velizade Admin</span>
+          </div>
+          <button onClick={handleLogout} style={{ color: 'var(--color-error)' }}><LogOut size={20} /></button>
+        </header>
+      )}
+
+      {/* Sidebar / Drawer */}
+      <div style={{ 
+        width: isMobile ? '280px' : '260px', 
+        height: '100vh',
+        position: isMobile ? 'fixed' : 'static',
+        top: 0, 
+        left: isMobile ? (isSidebarOpen ? '0' : '-100%') : '0',
+        zIndex: 150,
+        backgroundColor: 'var(--color-surface-container-low)', 
+        padding: '32px 20px', 
+        borderRight: isMobile ? 'none' : '1px solid var(--color-surface-container-high)',
+        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: isMobile ? '8px 0 32px rgba(0,0,0,0.1)' : 'none'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+           <h2 style={{ fontSize: '20px', fontFamily: 'var(--font-serif)', color: 'var(--color-primary)', fontWeight: 'bold', paddingLeft: '8px' }}>Velizade Admin</h2>
+           {isMobile && <button onClick={() => setIsSidebarOpen(false)}><X size={24} color="var(--color-outline)" /></button>}
+        </div>
         
-        <button onClick={() => setActiveTab('products')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'products' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'products' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold', marginBottom: '8px' }}>
-          <Package size={20} /> Məhsullar
-        </button>
-        <button onClick={() => setActiveTab('orders')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'orders' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'orders' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold', marginBottom: '8px' }}>
-          <DollarSign size={20} /> Sifarişlər 
-          {orders.filter(o=>o.status==='pending').length > 0 && <span style={{ marginLeft: 'auto', backgroundColor: 'var(--color-error)', color: 'white', fontSize: '12px', padding: '2px 8px', borderRadius: '12px' }}>{orders.filter(o=>o.status==='pending').length}</span>}
-        </button>
-        <button onClick={() => setActiveTab('analytics')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'analytics' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'analytics' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold', marginBottom: '32px' }}>
-          <BarChart2 size={20} /> Analitika
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button onClick={() => setActiveTab('products')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'products' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'products' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
+            <Package size={20} /> Məhsullar
+          </button>
+          <button onClick={() => setActiveTab('orders')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'orders' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'orders' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
+            <DollarSign size={20} /> Sifarişlər 
+            {orders.filter(o=>o.status==='pending').length > 0 && <span style={{ marginLeft: 'auto', backgroundColor: 'var(--color-error)', color: 'white', fontSize: '12px', padding: '2px 8px', borderRadius: '12px' }}>{orders.filter(o=>o.status==='pending').length}</span>}
+          </button>
+          <button onClick={() => setActiveTab('analytics')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'analytics' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'analytics' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
+            <BarChart2 size={20} /> Analitika
+          </button>
+          <button onClick={() => setActiveTab('settings')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'settings' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'settings' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
+            <Settings size={20} /> Tənzimləmələr
+          </button>
 
-        <button onClick={() => setActiveTab('settings')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'settings' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'settings' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold', marginBottom: '32px' }}>
-          <Settings size={20} /> Tənzimləmələr
-        </button>
+          <div style={{ margin: '16px 0', height: '1px', backgroundColor: 'var(--color-surface-container-highest)' }} />
 
-        <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', color: 'var(--color-error)', borderRadius: '12px', fontWeight: 'bold', borderTop: '1px solid var(--color-surface-container-highest)', paddingTop: '24px' }}>
-          <LogOut size={20} /> Çıxış Et
-        </button>
+          <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', color: 'var(--color-error)', borderRadius: '12px', fontWeight: 'bold' }}>
+            <LogOut size={20} /> Çıxış Et
+          </button>
+        </div>
       </div>
 
+      {/* Backdrop for Mobile Sidebar */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 140, backdropFilter: 'blur(2px)' }} 
+        />
+      )}
+
       {/* Main Content */}
-      <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? '24px 16px' : '40px', overflowX: 'hidden' }}>
           
           {activeTab === 'products' && (
             <>
@@ -384,12 +446,12 @@ function AdminDashboard() {
 
             {/* Add/Edit Form */}
             {showAddForm && (
-              <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', marginBottom: '40px', position: 'relative' }}>
+              <div style={{ backgroundColor: 'white', padding: isMobile ? '24px 16px' : '32px', borderRadius: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', marginBottom: '40px', position: 'relative' }}>
                 <button onClick={closeForm} style={{ position: 'absolute', top: '24px', right: '24px', color: 'var(--color-outline)' }}><X size={24} /></button>
                 <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '24px' }}>
                   {editingId ? 'Məhsulu Redaktə Et' : 'Yeni Məhsul Yarat'}
                 </h2>
-                <form onSubmit={handleSaveProduct} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <form onSubmit={handleSaveProduct} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Adı</label>
                     <input value={getAz(newProd.name)} onChange={e=>setNewProd({...newProd, name: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }} />
@@ -400,7 +462,7 @@ function AdminDashboard() {
                       <input type="number" step="0.1" value={newProd.price} onChange={e=>setNewProd({...newProd, price: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid var(--color-secondary)' }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--color-outline)' }}>Köhnə Qiyməti (Endirim)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--color-outline)' }}>Köhnə Qiyməti</label>
                       <input type="number" step="0.1" value={newProd.oldPrice} onChange={e=>setNewProd({...newProd, oldPrice: e.target.value})} placeholder="İstəyə bağlı" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }} />
                     </div>
                   </div>
@@ -412,32 +474,29 @@ function AdminDashboard() {
                   </div>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Etiket Yazısı (YENİ, ENDİRİM)</label>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Etiket</label>
                       <input value={newProd.badge} onChange={e=>setNewProd({...newProd, badge: e.target.value})} placeholder="Yazılmasa gizlənəcək" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                       <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Etiket Növü</label>
+                       <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Növü</label>
                        <select value={newProd.badgeType} onChange={e=>setNewProd({...newProd, badgeType: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }}>
-                         <option value="new">Qara (Yeni)</option>
-                         <option value="discount">Qırmızı (Endirim)</option>
-                         <option value="limited">Qızılı (Limited)</option>
+                         <option value="new">Yeni</option>
+                         <option value="discount">Endirim</option>
+                         <option value="limited">Limit.</option>
                        </select>
                     </div>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Şəkli Dəyiş / Yüklə (PC-dən)</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input type="file" accept="image/*" onChange={e => { if (e.target.files[0]) setImageFile(e.target.files[0]); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '13px' }} />
-                    </div>
-                    {editingId && newProd.img && !imageFile && <p style={{ fontSize: '11px', marginTop: '4px', color: 'var(--color-outline)' }}>* Şəkil seçilməsə köhnə şəkil qalacaq.</p>}
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
+                  <div style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Açıqlama</label>
                     <textarea value={getAz(newProd.desc)} onChange={e=>setNewProd({...newProd, desc: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', minHeight: '80px' }} />
                   </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <button type="submit" disabled={isUploading} style={{ padding: '12px 32px', backgroundColor: isUploading ? 'var(--color-outline)' : 'var(--color-primary)', color: 'white', borderRadius: '8px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', width: '100%' }}>
-                      {isUploading ? 'Yüklənir və Güncəllənir...' : (editingId ? 'Dəyişiklikləri Yadda Saxla' : 'Bazada Yeni Məhsul Yarat')}
+                  <div style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}>
+                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>Şəkil Yüklə</label>
+                     <input type="file" accept="image/*" onChange={e => { if (e.target.files[0]) setImageFile(e.target.files[0]); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '13px' }} />
+                  </div>
+                  <div style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}>
+                    <button type="submit" disabled={isUploading} style={{ padding: '14px', backgroundColor: isUploading ? 'var(--color-outline)' : 'var(--color-primary)', color: 'white', borderRadius: '9999px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', width: '100%' }}>
+                      {isUploading ? 'Yüklənir...' : (editingId ? 'Yadda Saxla' : 'Məhsul Yarat')}
                     </button>
                   </div>
                 </form>
@@ -445,8 +504,8 @@ function AdminDashboard() {
             )}
 
             {/* Data Table */}
-            <div style={{ backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: isMobile ? '800px' : 'auto', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ backgroundColor: 'var(--color-surface-container-low)', borderBottom: '2px solid var(--color-surface-container-high)' }}>
                   <tr>
                     <th style={{ padding: '16px', width: '60px', textAlign: 'center', color: 'var(--color-outline)' }}>Sıra No.</th>
@@ -687,27 +746,24 @@ function AdminDashboard() {
         )()}
 
         {activeTab === 'settings' && (
-          <div style={{ maxWidth: '800px', display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr)', gap: '40px', alignItems: 'start' }}>
+          <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             
             {/* Logo Section */}
-            <div style={{ gridColumn: '1 / -1', marginBottom: '-16px' }}>
-              <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '32px' }}>
-                 <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--color-surface-container-highest)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--color-surface-container)' }}>
-                    {siteLogo ? <img src={siteLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon color="var(--color-outline)" />}
-                 </div>
-                 <div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '8px' }}>Mağaza Vitrin Loqosu</h2>
-                    <p style={{ fontSize: '13px', color: 'var(--color-outline)', marginBottom: '16px' }}>Saytın hər yerində və kənarlarda görünəcək əsas loqo.</p>
-                    <label style={{ padding: '10px 24px', backgroundColor: 'var(--color-secondary)', color: 'white', borderRadius: '9999px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-block' }}>
-                       Şəkil Seç və Yüklə
-                       <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
-                    </label>
-                 </div>
-              </div>
+            <div style={{ backgroundColor: 'white', padding: isMobile ? '24px 16px' : '32px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: '24px' }}>
+               <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--color-surface-container-highest)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--color-surface-container)', flexShrink: 0 }}>
+                  {siteLogo ? <img src={siteLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon color="var(--color-outline)" />}
+               </div>
+               <div style={{ textAlign: isMobile ? 'center' : 'left' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '8px' }}>Mağaza Vitrin Loqosu</h2>
+                  <p style={{ fontSize: '13px', color: 'var(--color-outline)', marginBottom: '16px' }}>Saytın hər yerində və kənarlarda görünəcək əsas loqo.</p>
+                  <label style={{ padding: '10px 24px', backgroundColor: 'var(--color-secondary)', color: 'white', borderRadius: '9999px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-block' }}>
+                     Şəkil Seç və Yüklə
+                     <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                  </label>
+               </div>
             </div>
 
-            {/* Password Section */}
-            <div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '32px', alignItems: 'start' }}>
               <h1 style={{ fontSize: '28px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)', marginBottom: '32px' }}>Tənzimləmələr</h1>
               
               <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
