@@ -53,14 +53,14 @@ function AdminDashboard() {
   // Custom Categories
   const defaultCats = [
     { id: 'roses', name: 'Güllər', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEq5J-I9ld49e9RAt9aNKGa2iX7LIdndFbhDQAEz7N5nYbaJR7vuRPtrZq-yVb0lNnZ78hgUQQBKWGKBzDStgUUxA-tJTlpWD_zMgIp25P7ara3qopRM7Csiy6fgz7QBn_rKga96ZMBwqFTVpMxYpPybaHTnig0UkB6vTu14KQ8Jj1c2ssub2c-maTHWJ15kt-JQZGa1CXHItVOqeU6jtVjOqv7EQx3Xl6IToWm81ygQFF5CZXZ5IIyZ7sVr38lOU8EETHIbvyCGo' },
-    { id: 'bouquets', name: 'Buketlər', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAwdRTAq-itRQHDM855ClpPsg-ZOLANXiqAeFO0GcdDekrpZh1txQBwP8gObPU2XBYUEjDa8BBKBSSYgGEbKkokjnC8RCRTx2UArLPzacQbGje-utECwGUW_WxcE7IChxp4EAUR_aeb0Rdjv6OEMeqDiRjrSeSQpmVNdUVcNt6QZFngTfA_pkZa9WqYt2elBBjSX8fxlsoabT58z6XJH0A7xUp6kvf3wsExxcKUgSHeu8VlORJZoiCFN2gZ13IVNyhCDth0vFor0mo' },
-    { id: 'baskets', name: 'Səbətlər', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFsWhAvnDXxozZkETiw5zr9PTJv6jV6nlYt4ze7Tx-M6z4HznhB7LH0TVKBW0yO9xKw7kLTTB1pYb8eKe5KpUUhit1_wPQOphJK6dRaCsegcpLxRqowzzZyHcMbK9Ky0N0kHIyfa7qBGsTcyLdpwo8xEWHpNeQpWDZ_OFM5xg8ch9HJt04rqXdw9A_7E58F9v8rsjPQHihaV5GS6lTsMiEQHlBwEg5I8NaCSe6tYDFuIIepE0cv2z_NByP4fCub9_YfgjN3ZPcxRo' },
-    { id: 'boxes', name: 'Qutular', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAV1MkgrgYAa2k1rU6aZEiEytdojKMmV39mCeS6kf2eV0DsqoRbEX2oq0XWwrSCBXb3zZbuzYc60kG7rKZ1Oic5qqpKro3wp9ik3s1jryWgq48UYDazf3uJoJmSj55mLJja_rW1fRnxYFyXJOQ0Paq0m3oECcAz0ewWRP7u7feJQhIuyPuzoJVuYpcc073EIDoqqnvmd-QOzooC7VOJ_UxJsr7OuaLXfZ21rkbXPq5bLA_pZXpKcODabdnXArTp-K0BwMpEWCjXQKU' }
+    { id: 'toys', name: 'Oyuncaqlar', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAwdRTAq-itRQHDM855ClpPsg-ZOLANXiqAeFO0GcdDekrpZh1txQBwP8gObPU2XBYUEjDa8BBKBSSYgGEbKkokjnC8RCRTx2UArLPzacQbGje-utECwGUW_WxcE7IChxp4EAUR_aeb0Rdjv6OEMeqDiRjrSeSQpmVNdUVcNt6QZFngTfA_pkZa9WqYt2elBBjSX8fxlsoabT58z6XJH0A7xUp6kvf3wsExxcKUgSHeu8VlORJZoiCFN2gZ13IVNyhCDth0vFor0mo' },
+    { id: 'bags', name: 'Çantalar', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFsWhAvnDXxozZkETiw5zr9PTJv6jV6nlYt4ze7Tx-M6z4HznhB7LH0TVKBW0yO9xKw7kLTTB1pYb8eKe5KpUUhit1_wPQOphJK6dRaCsegcpLxRqowzzZyHcMbK9Ky0N0kHIyfa7qBGsTcyLdpwo8xEWHpNeQpWDZ_OFM5xg8ch9HJt04rqXdw9A_7E58F9v8rsjPQHihaV5GS6lTsMiEQHlBwEg5I8NaCSe6tYDFuIIepE0cv2z_NByP4fCub9_YfgjN3ZPcxRo' }
   ];
   const [categories, setCategories] = useState([]);
   const [newCatName, setNewCatName] = useState('');
   const [catFilter, setCatFilter] = useState('all');
   const [siteLogo, setSiteLogo] = useState(null);
+  const [heroDesc, setHeroDesc] = useState('');
 
   useEffect(() => {
     // Fetch password from Firebase
@@ -75,7 +75,7 @@ function AdminDashboard() {
       // Fetch categories
       const catSnap = await get(child(ref(db), 'admin_settings/categories'));
       if (catSnap.exists()) {
-        const existing = catSnap.val();
+        const existing = catSnap.val().filter(c => c.id !== 'boxes');
         let needsUpdate = false;
         const patched = existing.map(c => {
            if (!c.img) {
@@ -100,6 +100,12 @@ function AdminDashboard() {
       const logoSnap = await get(child(ref(db), 'admin_settings/cms/logo'));
       if (logoSnap.exists()) {
         setSiteLogo(logoSnap.val());
+      }
+
+      // Fetch Hero Description
+      const heroSnap = await get(child(ref(db), 'admin_settings/cms/hero_desc'));
+      if (heroSnap.exists()) {
+        setHeroDesc(heroSnap.val());
       }
     };
     fetchPassword();
@@ -196,6 +202,16 @@ function AdminDashboard() {
     } catch(err) {
        console.error(err);
        alert('Xəta baş verdi!');
+    }
+  };
+
+  const handleUpdateHeroDesc = async () => {
+    try {
+      await set(ref(db, 'admin_settings/cms/hero_desc'), heroDesc);
+      alert('Hero mətni uğurla yeniləndi!');
+    } catch(err) {
+      console.error(err);
+      alert('Xəta baş verdi!');
     }
   };
 
@@ -573,51 +589,51 @@ function AdminDashboard() {
         {activeTab === 'orders' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-              <h1 style={{ fontSize: '28px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)' }}>Gələn Sifarişlər</h1>
+              <h1 style={{ fontSize: '24px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)' }}>Gələn Sifarişlər</h1>
             </div>
 
-            <div style={{ display: 'grid', gap: '24px' }}>
+            <div style={{ display: 'grid', gap: '20px' }}>
                {ordersLoading ? (
                  <p>Yüklənir...</p>
                ) : orders.length === 0 ? (
                  <p>Hələ ki, yeni sifariş yoxdur.</p>
                ) : (
                  orders.map(order => (
-                   <div key={order.firebaseId} style={{ backgroundColor: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-surface-container-high)', paddingBottom: '16px' }}>
-                         <div>
-                            <span style={{ fontSize: '12px', color: 'var(--color-outline)' }}>#{order.id} • {new Date(order.createdAt).toLocaleString('az-AZ')}</span>
-                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '4px' }}>{order.customer.name} <span style={{ color: 'var(--color-outline)', fontWeight: 'normal', fontSize: '14px' }}>({order.customer.phone})</span></h3>
-                            <p style={{ fontSize: '14px', color: 'var(--color-on-surface-variant)', marginTop: '4px' }}>📍 {order.customer.address} ({order.customer.date} | {order.customer.time})</p>
-                            {order.customer.note && <p style={{ fontSize: '14px', backgroundColor: 'var(--color-surface-container-lowest)', padding: '8px', borderRadius: '8px', marginTop: '8px', fontStyle: 'italic' }}>Qeyd: {order.customer.note}</p>}
-                         </div>
-                         <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-secondary)' }}>{order.totalAmount} AZN</div>
-                            <div style={{ fontSize: '12px', color: 'var(--color-outline)', marginTop: '4px' }}>Çatdırılma: {order.deliveryMethod} ({order.deliveryFee} AZN)</div>
-                            
-                            <div style={{ marginTop: '16px' }}>
-                               {order.status === 'pending' ? (
-                                 <button onClick={() => { if(window.confirm('Sifarişi təhvil verilmiş kimi işarələ?')) updateOrderStatus(order.firebaseId, 'completed'); }} style={{ padding: '8px 16px', backgroundColor: 'var(--color-error)', color: 'white', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={16}/> Gözləyir (Təsdiqlə)</button>
-                               ) : (
-                                 <div style={{ padding: '8px 16px', backgroundColor: 'var(--color-surface-container-low)', color: 'var(--color-primary)', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.6 }}><CheckCircle size={16}/> Tamamlanıb</div>
-                               )}
-                            </div>
-                         </div>
-                      </div>
-
-                      {/* Items */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-                         {order.items.map(oItem => (
-                           <div key={oItem.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'var(--color-surface-container-lowest)', padding: '8px 12px', borderRadius: '12px' }}>
-                             <img src={oItem.img} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
-                             <div>
-                               <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{oItem.name}</div>
-                               <div style={{ fontSize: '12px', color: 'var(--color-outline)' }}>{oItem.qty} ədəd x {oItem.price} AZN</div>
+                    <div key={order.firebaseId} className="admin-card-compact" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                       <div className="admin-orders-header">
+                          <div>
+                             <span style={{ fontSize: '12px', color: 'var(--color-outline)' }}>#{order.id} • {new Date(order.createdAt).toLocaleString('az-AZ')}</span>
+                             <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '4px' }}>{order.customer.name} <span style={{ color: 'var(--color-outline)', fontWeight: 'normal', fontSize: '14px' }}>({order.customer.phone})</span></h3>
+                             <p style={{ fontSize: '14px', color: 'var(--color-on-surface-variant)', marginTop: '4px' }}>📍 {order.customer.address} ({order.customer.date} | {order.customer.time})</p>
+                             {order.customer.note && <p style={{ fontSize: '14px', backgroundColor: 'var(--color-surface-container-lowest)', padding: '8px', borderRadius: '8px', marginTop: '8px', fontStyle: 'italic' }}>Qeyd: {order.customer.note}</p>}
+                          </div>
+                          <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                             <div className="admin-metric-value" style={{ color: 'var(--color-secondary)' }}>{order.totalAmount} AZN</div>
+                             <div style={{ fontSize: '12px', color: 'var(--color-outline)', marginTop: '4px' }}>Çatdırılma: {order.deliveryMethod} ({order.deliveryFee} AZN)</div>
+                             
+                             <div style={{ marginTop: '16px' }}>
+                                {order.status === 'pending' ? (
+                                  <button onClick={() => { if(window.confirm('Sifarişi təhvil verilmiş kimi işarələ?')) updateOrderStatus(order.firebaseId, 'completed'); }} style={{ padding: '8px 16px', backgroundColor: 'var(--color-error)', color: 'white', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Clock size={16}/> Gözləyir (Təsdiqlə)</button>
+                                ) : (
+                                  <div style={{ padding: '8px 16px', backgroundColor: 'var(--color-surface-container-low)', color: 'var(--color-primary)', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.6 }}><CheckCircle size={16}/> Tamamlanıb</div>
+                                )}
                              </div>
-                           </div>
-                         ))}
-                      </div>
-                   </div>
+                          </div>
+                       </div>
+
+                       {/* Items */}
+                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+                          {order.items.map(oItem => (
+                            <div key={oItem.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'var(--color-surface-container-lowest)', padding: '8px 12px', borderRadius: '12px' }}>
+                              <img src={oItem.img} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{oItem.name}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-outline)' }}>{oItem.qty} ədəd x {oItem.price} AZN</div>
+                              </div>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
                  ))
                )}
             </div>
@@ -669,54 +685,54 @@ function AdminDashboard() {
 
              return (
               <div style={{ maxWidth: '900px' }}>
-                <h1 style={{ fontSize: '28px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)', marginBottom: '24px' }}>Satış Statistikası</h1>
+                <h1 style={{ fontSize: '24px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)', marginBottom: '24px' }}>Satış Statistikası</h1>
                 
                 {/* Date Filter */}
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', backgroundColor: 'white', padding: '16px 24px', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', alignItems: 'center' }}>
-                   <div>
+                <div className="admin-card-compact" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '16px', marginBottom: '32px', alignItems: 'center' }}>
+                   <div style={{ flex: 1 }}>
                       <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: 'var(--color-outline)', marginBottom: '4px' }}>Başlanğıc Tarixi</label>
-                      <input type="date" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange({...analyticsDateRange, start: e.target.value})} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-outline-variant)', outline: 'none', color: 'var(--color-on-surface)' }} />
+                      <input type="date" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange({...analyticsDateRange, start: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-outline-variant)', outline: 'none', color: 'var(--color-on-surface)' }} />
                    </div>
-                   <div style={{ padding: '0 8px', color: 'var(--color-outline)' }}>—</div>
-                   <div>
+                   {!isMobile && <div style={{ padding: '0 8px', color: 'var(--color-outline)' }}>—</div>}
+                   <div style={{ flex: 1 }}>
                       <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: 'var(--color-outline)', marginBottom: '4px' }}>Bitiş Tarixi</label>
-                      <input type="date" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange({...analyticsDateRange, end: e.target.value})} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-outline-variant)', outline: 'none', color: 'var(--color-on-surface)' }} />
+                      <input type="date" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange({...analyticsDateRange, end: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-outline-variant)', outline: 'none', color: 'var(--color-on-surface)' }} />
                    </div>
                    {(analyticsDateRange.start || analyticsDateRange.end) && (
-                      <button onClick={() => setAnalyticsDateRange({ start: '', end: '' })} style={{ marginLeft: 'auto', padding: '10px 20px', backgroundColor: 'var(--color-surface-container-low)', color: 'var(--color-error)', fontWeight: 'bold', borderRadius: '8px' }}>
+                      <button onClick={() => setAnalyticsDateRange({ start: '', end: '' })} style={{ padding: '10px 20px', backgroundColor: 'var(--color-surface-container-low)', color: 'var(--color-error)', fontWeight: 'bold', borderRadius: '8px' }}>
                          Sıfırla
                       </button>
                    )}
                 </div>
 
                 {/* 3 Metrics */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '40px' }}>
-                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <p style={{ color: 'var(--color-outline)', fontSize: '14px', fontWeight: 'bold' }}>SEÇİLƏN SATIŞ GƏLİRİ (AZN)</p>
-                    <p style={{ fontSize: '32px', color: 'var(--color-primary)', fontWeight: 'bold', marginTop: '12px' }}>{totalRevenue.toFixed(2)} ₼</p>
+                <div className="admin-grid-metrics" style={{ marginBottom: '32px' }}>
+                  <div className="admin-metric-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <p style={{ color: 'var(--color-outline)', fontSize: '12px', fontWeight: 'bold' }}>SATIŞ GƏLİRİ (AZN)</p>
+                    <p className="admin-metric-value">{totalRevenue.toFixed(2)} ₼</p>
                   </div>
-                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <p style={{ color: 'var(--color-outline)', fontSize: '14px', fontWeight: 'bold' }}>SİFARİŞ (MÜŞTƏRİ) SAYI</p>
-                    <p style={{ fontSize: '32px', color: 'var(--color-primary)', fontWeight: 'bold', marginTop: '12px' }}>{filteredOrders.length}</p>
+                  <div className="admin-metric-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <p style={{ color: 'var(--color-outline)', fontSize: '12px', fontWeight: 'bold' }}>SİFARİŞ SAYI</p>
+                    <p className="admin-metric-value">{filteredOrders.length}</p>
                   </div>
-                  <div style={{ backgroundColor: 'var(--color-secondary)', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <p style={{ color: 'white', fontSize: '14px', fontWeight: 'bold', opacity: 0.9 }}>TƏHVİL VERİLƏN (Buket Sayı)</p>
-                    <p style={{ fontSize: '32px', color: 'white', fontWeight: 'bold', marginTop: '12px' }}>{totalItemsSold}</p>
+                  <div className="admin-metric-card" style={{ backgroundColor: 'var(--color-secondary)', display: 'flex', flexDirection: 'column' }}>
+                    <p style={{ color: 'white', fontSize: '12px', fontWeight: 'bold', opacity: 0.9 }}>TƏHVİL VERİLƏN</p>
+                    <p className="admin-metric-value" style={{ color: 'white' }}>{totalItemsSold}</p>
                   </div>
                 </div>
 
                 {/* Performance Table */}
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '24px' }}>Məhsul Performansı və Çeşidləmə</h2>
-                <div style={{ backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '24px' }}>Məhsul Performansı</h2>
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ backgroundColor: 'var(--color-surface-container-low)', borderBottom: '2px solid var(--color-surface-container-high)' }}>
                       <tr>
                         <th style={{ padding: '16px 24px', color: 'var(--color-outline)' }}>Məhsulun Görüntüsü</th>
                         <th style={{ padding: '16px 24px', cursor: 'pointer' }} onClick={() => requestSort('qty')}>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: sortConfig.key === 'qty' ? 'var(--color-primary)' : 'var(--color-outline)' }}>Satılma Sayı (Ədəd) {sortConfig.key === 'qty' ? (sortConfig.direction === 'desc' ? <ArrowDown size={14}/> : <ArrowUp size={14}/>) : ''}</div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: sortConfig.key === 'qty' ? 'var(--color-primary)' : 'var(--color-outline)' }}>Satılma Sayı {sortConfig.key === 'qty' ? (sortConfig.direction === 'desc' ? <ArrowDown size={14}/> : <ArrowUp size={14}/>) : ''}</div>
                         </th>
                         <th style={{ padding: '16px 24px', cursor: 'pointer' }} onClick={() => requestSort('revenue')}>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: sortConfig.key === 'revenue' ? 'var(--color-primary)' : 'var(--color-outline)' }}>Qazandırdığı Pul (AZN) {sortConfig.key === 'revenue' ? (sortConfig.direction === 'desc' ? <ArrowDown size={14}/> : <ArrowUp size={14}/>) : ''}</div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: sortConfig.key === 'revenue' ? 'var(--color-primary)' : 'var(--color-outline)' }}>Məbləğ (AZN) {sortConfig.key === 'revenue' ? (sortConfig.direction === 'desc' ? <ArrowDown size={14}/> : <ArrowUp size={14}/>) : ''}</div>
                         </th>
                       </tr>
                     </thead>
@@ -725,15 +741,15 @@ function AdminDashboard() {
                         <tr><td colSpan="3" style={{ padding: '24px', textAlign: 'center' }}>Heç bir satış yoxdur.</td></tr>
                       ) : statsArray.map((p, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--color-surface-container-highest)' }}>
-                          <td style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <td style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden' }}><img src={p.img} style={{ width:'100%', height:'100%', objectFit:'cover' }} /></div>
                             <span style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{p.name}</span>
                           </td>
-                          <td style={{ padding: '16px 24px', fontWeight: 'bold', color: 'var(--color-secondary)' }}>
-                             <span style={{ backgroundColor: 'var(--color-surface-container-lowest)', padding: '8px 16px', borderRadius: '9999px' }}>{p.qty} Ədəd</span>
+                          <td style={{ padding: '12px 24px', fontWeight: 'bold', color: 'var(--color-secondary)' }}>
+                             <span style={{ backgroundColor: 'var(--color-surface-container-lowest)', padding: '6px 12px', borderRadius: '9999px', fontSize: '13px' }}>{p.qty} Ədəd</span>
                           </td>
-                          <td style={{ padding: '16px 24px', fontWeight: 'bold' }}>
-                            <span style={{ fontSize: '18px' }}>{p.revenue} ₼</span>
+                          <td style={{ padding: '12px 24px', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '16px' }}>{p.revenue} ₼</span>
                           </td>
                         </tr>
                       ))}
@@ -748,8 +764,10 @@ function AdminDashboard() {
         {activeTab === 'settings' && (
           <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             
+            <h1 style={{ fontSize: '24px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)' }}>Tənzimləmələr</h1>
+
             {/* Logo Section */}
-            <div style={{ backgroundColor: 'white', padding: isMobile ? '24px 16px' : '32px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: '24px' }}>
+            <div className="admin-card-compact" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: '24px' }}>
                <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--color-surface-container-highest)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--color-surface-container)', flexShrink: 0 }}>
                   {siteLogo ? <img src={siteLogo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon color="var(--color-outline)" />}
                </div>
@@ -763,10 +781,27 @@ function AdminDashboard() {
                </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '32px', alignItems: 'start' }}>
-              <h1 style={{ fontSize: '28px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)', marginBottom: '32px' }}>Tənzimləmələr</h1>
+            {/* CMS Sections */}
+            <div className="admin-card-compact" style={{ gridColumn: 'span 2' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '16px' }}>Hero Bölməsi Mətni</h2>
+              <p style={{ fontSize: '13px', color: 'var(--color-outline)', marginBottom: '16px' }}>Ana səhifədəki əsas tanıtım mətni (Bakının ən premium...)</p>
+              <textarea 
+                value={heroDesc} 
+                onChange={e => setHeroDesc(e.target.value)} 
+                placeholder="Mətni daxil edin..."
+                style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)', outline: 'none', minHeight: '120px', fontSize: '15px' }} 
+              />
+              <button 
+                onClick={handleUpdateHeroDesc}
+                style={{ marginTop: '16px', padding: '12px 32px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}
+              >
+                Mətni Yenilə
+              </button>
+            </div>
+
+            <div className="admin-settings-grid">
               
-              <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
+              <div className="admin-card-compact">
                 <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '24px' }}>Sistem Şifrəsini Yenilə</h2>
                 <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
@@ -784,45 +819,38 @@ function AdminDashboard() {
                   <button type="submit" style={{ marginTop: '16px', padding: '14px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}>Şifrəni Dəyiş</button>
                 </form>
               </div>
-            </div>
 
-            {/* Categories Section */}
-            <div>
-              <h1 style={{ fontSize: '28px', color: 'transparent', fontWeight: 'bold', fontFamily: 'var(--font-serif)', marginBottom: '32px', userSelect: 'none' }}>-</h1>
-              
-              <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.04)' }}>
+              <div className="admin-card-compact">
                 <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '24px' }}>Yaradılmış Kateqoriyalar</h2>
                 
                 {/* List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
                   {categories.map(c => (
-                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: 'var(--color-surface-container-lowest)', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)' }}>
+                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', backgroundColor: 'var(--color-surface-container-lowest)', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                           <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-surface-container-high)', overflow: 'hidden', border: '1px solid var(--color-surface-container-highest)' }}>
-                              {c.img ? <img src={c.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon size={20} color="var(--color-outline)" style={{ margin: '10px' }}/>}
+                           <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-surface-container-high)', overflow: 'hidden', border: '1px solid var(--color-surface-container-highest)' }}>
+                              {c.img ? <img src={c.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon size={16} color="var(--color-outline)" style={{ margin: '8px' }}/>}
                            </div>
-                           <span style={{ fontWeight: 'bold' }}>{c.name}</span>
+                           <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{c.name}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                            <label style={{ cursor: 'pointer', color: 'var(--color-secondary)' }} title="Kateqoriyanın şəklini dəyiş">
-                              <ImageIcon size={18} />
+                              <ImageIcon size={16} />
                               <input type="file" accept="image/*" onChange={(e) => handleCategoryImgUpload(c.id, e.target.files[0])} style={{ display: 'none' }} />
                            </label>
-                           <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--color-surface-container-highest)' }}></div>
-                           <button onClick={() => handleDeleteCategory(c.id)} title="Katqoriyanı sil (Məhsullar silinmir!)" style={{ color: 'var(--color-error)' }}><Trash2 size={18}/></button>
+                           <button onClick={() => handleDeleteCategory(c.id)} title="Katqoriyanı sil" style={{ color: 'var(--color-error)' }}><Trash2 size={16}/></button>
                         </div>
                      </div>
                   ))}
                 </div>
 
-                {/* Add Form */}
                 <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '12px' }}>
-                  <input required placeholder="Məs. Oyuncaqlar" value={newCatName} onChange={e=>setNewCatName(e.target.value)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--color-primary-fixed)', outline: 'none' }} />
-                  <button type="submit" style={{ padding: '0 24px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}>Əlavə Et</button>
+                  <input required placeholder="Ad yazın" value={newCatName} onChange={e=>setNewCatName(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--color-primary-fixed)', outline: 'none', fontSize: '13px' }} />
+                  <button type="submit" style={{ padding: '0 16px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold', fontSize: '13px' }}>+</button>
                 </form>
               </div>
-            </div>
 
+            </div>
           </div>
         )}
 

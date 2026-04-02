@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingBag, CreditCard, Truck, User, Phone, MapPin, Calendar, Clock, Edit3, CheckCircle, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useLocale } from '../context/LocaleContext';
 import { db, ref, set } from '../config/firebase';
@@ -9,11 +10,11 @@ const TELEGRAM_CHAT_ID = '1238464292';
 
 function Checkout() {
   const { items, total, clearCart } = useCart();
-  const { t, getLoc } = useLocale();
+  const { t, getLoc, lang } = useLocale();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    name: '', phone: '', address: '', note: '', date: '', time: ''
+    name: '', phone: '', address: '', note: '', date: '', time: '12:00'
   });
   const [deliveryMethod, setDeliveryMethod] = useState('standard');
   const [receiveType, setReceiveType] = useState('delivery');
@@ -24,6 +25,10 @@ function Checkout() {
   const finalTotal = total + deliveryFee;
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const hours = [
+    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00' , '18:00', '19:00', '20:00', '21:00', '22:00'
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +48,7 @@ function Checkout() {
     if (formData.note) text += `💬 Qeyd:  ${formData.note}\n`;
     text += `\n🛍️ Sifariş:\n`;
     items.forEach(item => {
-      text += `- ${item.qty}x ${item.name} (${item.price * item.qty} AZN)\n`;
+      text += `- ${item.qty}x ${getLoc(item.name)} (${item.price * item.qty} AZN)\n`;
     });
     text += `\n📦 Çatdırılma:  ${deliveryFee} AZN`;
     text += `\n💰 Yekun:  ${finalTotal} AZN`;
@@ -52,36 +57,21 @@ function Checkout() {
       const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: text
-        })
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text })
       });
 
-      // Firebase-ə sifariş qeydi
       const orderId = Date.now().toString();
       const orderData = {
         id: orderId,
-        customer: {
-          name: formData.name,
-          phone: formData.phone,
-          address: finalAddress,
-          date: formData.date,
-          time: formData.time,
-          note: formData.note
-        },
+        customer: { ...formData, address: finalAddress },
         items: items.map(item => ({
-             id: item.id,
-             name: item.name,
-             qty: item.qty,
-             price: item.price,
-             img: item.img
+             id: item.id, name: item.name, qty: item.qty, price: item.price, img: item.img
         })),
         deliveryMethod: finalMethod,
         receiveType: receiveType,
         deliveryFee,
         totalAmount: finalTotal,
-        status: 'pending', // pending, completed, cancelled
+        status: 'pending',
         createdAt: new Date().toISOString()
       };
       await set(ref(db, 'orders/' + orderId), orderData);
@@ -99,16 +89,38 @@ function Checkout() {
     }
   };
 
+  const InputField = ({ icon: Icon, ...props }) => (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-muted)' }}>
+        <Icon size={18} />
+      </div>
+      <input 
+        required 
+        style={{
+          width: '100%', padding: '16px 16px 16px 48px', borderRadius: '12px', 
+          border: '1px solid var(--clr-border)', backgroundColor: '#283220', 
+          outline: 'none', color: 'var(--clr-text)', fontSize: '14.5px', transition: 'var(--transition)'
+        }} 
+        onFocus={e => e.target.style.borderColor = 'var(--clr-green)'}
+        onBlur={e => e.target.style.borderColor = 'var(--clr-border)'}
+        {...props} 
+      />
+    </div>
+  );
+
   if (success) {
     return (
-      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-        <div style={{ backgroundColor: 'var(--color-surface-container-lowest)', padding: '40px', borderRadius: '24px', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
-          <span style={{ fontSize: '64px', display: 'block', marginBottom: '16px' }}>✨</span>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-serif)', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            {t('chk_thanks')},<br />{formData.name}!
+      <div style={{ backgroundColor: 'var(--clr-bg)', minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div style={{ 
+          backgroundColor: 'var(--clr-surface)', padding: '60px 40px', borderRadius: 'var(--radius-lg)', 
+          textAlign: 'center', maxWidth: '500px', border: '1px solid var(--clr-border)', boxShadow: 'var(--shadow-card)' 
+        }}>
+          <CheckCircle size={80} color="var(--clr-green)" style={{ marginBottom: '24px' }} />
+          <h2 style={{ fontSize: '28px', fontWeight: '500', fontFamily: 'var(--font-serif)', color: 'var(--clr-white)', marginBottom: '16px' }}>
+            {t('chk_thanks')}, {formData.name.split(' ')[0]}!
           </h2>
-          <p style={{ color: 'var(--color-outline)', lineHeight: '1.6', marginBottom: '32px' }}>{t('chk_success')}</p>
-          <button onClick={() => navigate('/')} style={{ padding: '16px 32px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}>
+          <p style={{ color: 'var(--clr-muted)', lineHeight: '1.7', marginBottom: '40px', fontSize: '15px' }}>{t('chk_success')}</p>
+          <button onClick={() => navigate('/')} className="btn-primary" style={{ minWidth: '220px', justifyContent: 'center' }}>
             {t('chk_back')}
           </button>
         </div>
@@ -118,119 +130,202 @@ function Checkout() {
 
   if (items.length === 0) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: '48px', marginBottom: '16px' }}>🛒</span>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-serif)', color: 'var(--color-primary)' }}>{t('chk_empty')}</h2>
+      <div style={{ backgroundColor: 'var(--clr-bg)', minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <ShoppingBag size={64} style={{ marginBottom: '24px', opacity: 0.3 }} />
+        <h2 style={{ fontSize: '24px', fontWeight: '500', fontFamily: 'var(--font-serif)', color: 'var(--clr-white)' }}>{t('chk_empty')}</h2>
+        <button onClick={() => navigate('/shop')} className="btn-ghost" style={{ marginTop: '24px' }}>{t('go_shop')}</button>
       </div>
     );
   }
 
-  const inputStyle = {
-    width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)',
-    backgroundColor: 'var(--color-surface-container-low)', outline: 'none', color: 'var(--color-on-surface)'
-  };
-
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 20px 100px' }}>
-      <h1 style={{ fontSize: '28px', fontWeight: 'bold', fontFamily: 'var(--font-serif)', color: 'var(--color-primary)', marginBottom: '32px' }}>{t('chk_title')}</h1>
-      
-      {/* Sürətli Baxış */}
-      <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '16px' }}>{t('chk_order')}</h3>
-      <div style={{ marginBottom: '32px' }}>
-        {items.map(item => (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: '16px', backgroundColor: 'var(--color-surface-container-lowest)', borderRadius: '16px', marginBottom: '12px' }}>
-             <img src={item.img} style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }} />
-            <div style={{ marginLeft: '16px', flex: 1 }}>
-               <h4 style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{getLoc(item.name)}</h4>
-               <p style={{ fontSize: '14px', color: 'var(--color-outline)' }}>{t('chk_qty')} {item.qty}</p>
-            </div>
-            <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{item.price * item.qty} AZN</div>
-          </div>
-        ))}
+    <div style={{ backgroundColor: 'var(--clr-bg)', minHeight: '100vh' }}>
+      {/* Breadcrumb Strip */}
+      <div style={{ padding: '16px 0', borderBottom: '1px solid var(--clr-border)', fontSize: '13.5px', color: 'var(--clr-muted)' }}>
+        <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>{t('home')}</span>
+          <ChevronRight size={14} />
+          <span style={{ color: 'var(--clr-white)', fontWeight: '500' }}>{t('checkout')}</span>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '16px' }}>{t('chk_info')}</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-          <input required style={inputStyle} name="name" value={formData.name} onChange={handleChange} placeholder={t('chk_name')} />
-          <input required type="tel" style={inputStyle} name="phone" value={formData.phone} onChange={handleChange} placeholder={t('chk_phone')} />
-          {receiveType === 'delivery' && (
-            <input required style={inputStyle} name="address" value={formData.address} onChange={handleChange} placeholder={t('chk_address')} />
-          )}
+      <div className="container" style={{ padding: '40px 24px 100px', maxWidth: '900px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: '500', fontFamily: 'var(--font-serif)', color: 'var(--clr-white)', marginBottom: '40px', letterSpacing: '0.05em' }}>{t('checkout')}</h1>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1.3fr 1fr', gap: '60px', alignItems: 'start' }}>
           
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <input required type="date" style={{...inputStyle, flex: 1}} name="date" value={formData.date} onChange={handleChange} />
-            <input required type="time" style={{...inputStyle, flex: 1}} name="time" value={formData.time} onChange={handleChange} />
-          </div>
-
-          <textarea rows="4" style={{...inputStyle, resize: 'none'}} name="note" value={formData.note} onChange={handleChange} placeholder={t('chk_note')} />
-        </div>
-
-        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '16px' }}>{t('chk_receive_type')}</h3>
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-           <label style={{ flex: '1 1 calc(50% - 6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px', border: receiveType === 'delivery' ? '2px solid var(--color-primary)' : '2px solid transparent', backgroundColor: receiveType === 'delivery' ? 'var(--color-surface-container-lowest)' : 'var(--color-surface-container-low)', cursor: 'pointer', textAlign: 'center', fontWeight: 'bold', color: receiveType === 'delivery' ? 'var(--color-primary)' : 'var(--color-on-surface)' }}>
-              <input type="radio" name="rType" value="delivery" checked={receiveType === 'delivery'} onChange={()=>setReceiveType('delivery')} style={{ display: 'none' }} />
-              {t('chk_delivery_type')}
-           </label>
-           <label style={{ flex: '1 1 calc(50% - 6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px', border: receiveType === 'pickup' ? '2px solid var(--color-primary)' : '2px solid transparent', backgroundColor: receiveType === 'pickup' ? 'var(--color-surface-container-lowest)' : 'var(--color-surface-container-low)', cursor: 'pointer', textAlign: 'center', fontWeight: 'bold', color: receiveType === 'pickup' ? 'var(--color-primary)' : 'var(--color-on-surface)' }}>
-              <input type="radio" name="rType" value="pickup" checked={receiveType === 'pickup'} onChange={()=>setReceiveType('pickup')} style={{ display: 'none' }} />
-              {t('chk_pickup')}
-           </label>
-        </div>
-
-        {receiveType === 'pickup' ? (
-           <div style={{ backgroundColor: 'var(--color-surface-container-low)', padding: '16px', borderRadius: '16px', marginBottom: '40px', color: 'var(--color-on-surface-variant)', fontSize: '14px', lineHeight: '1.6' }}>
-             ℹ️ {t('chk_pickup_info')}
-           </div>
-        ) : (
-          <>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '16px' }}>{t('chk_method')}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '40px' }}>
-               <label style={{ display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '16px', border: deliveryMethod === 'standard' ? '2px solid var(--color-primary-fixed)' : '2px solid transparent', backgroundColor: deliveryMethod === 'standard' ? 'var(--color-surface-container-lowest)' : 'var(--color-surface-container-low)', cursor: 'pointer' }}>
-                  <input type="radio" name="delivery" value="standard" checked={deliveryMethod === 'standard'} onChange={() => setDeliveryMethod('standard')} style={{ marginRight: '16px', accentColor: 'var(--color-primary)' }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{t('chk_std')}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--color-outline)' }}>2-4h</div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            
+            {/* Customer Info */}
+            <section>
+              <h3 style={{ fontSize: '15px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--clr-rose)', marginBottom: '24px' }}>{t('chk_info')}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <InputField icon={User} name="name" value={formData.name} onChange={handleChange} placeholder={t('chk_name')} />
+                <InputField icon={Phone} type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder={t('chk_phone')} />
+                {receiveType === 'delivery' && (
+                  <InputField icon={MapPin} name="address" value={formData.address} onChange={handleChange} placeholder={t('chk_address')} />
+                )}
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <InputField icon={Calendar} type="date" name="date" value={formData.date} onChange={handleChange} />
+                  
+                  {/* Time Slots Selector */}
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-muted)' }}>
+                      <Clock size={18} />
+                    </div>
+                    <select 
+                      name="time" 
+                      value={formData.time} 
+                      onChange={handleChange}
+                      style={{
+                        width: '100%', padding: '16px 16px 16px 48px', borderRadius: '12px', 
+                        border: '1px solid var(--clr-border)', backgroundColor: '#283220', 
+                        outline: 'none', color: 'var(--clr-text)', fontSize: '14.5px'
+                      }}
+                    >
+                      {hours.map(h => <option key={h} value={h} style={{color: 'black'}}>{h}</option>)}
+                    </select>
                   </div>
-                  <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>8 AZN</div>
-               </label>
-
-           <label style={{ display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '16px', border: deliveryMethod === 'express' ? '2px solid var(--color-primary-fixed)' : '2px solid transparent', backgroundColor: deliveryMethod === 'express' ? 'var(--color-surface-container-lowest)' : 'var(--color-surface-container-low)', cursor: 'pointer' }}>
-              <input type="radio" name="delivery" value="express" checked={deliveryMethod === 'express'} onChange={() => setDeliveryMethod('express')} style={{ marginRight: '16px', accentColor: 'var(--color-primary)' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{t('chk_exp')}</div>
-                <div style={{ fontSize: '12px', color: 'var(--color-outline)' }}>45m</div>
+                </div>
+                
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--clr-muted)' }}>
+                    <Edit3 size={18} />
+                  </div>
+                  <textarea 
+                    rows="4" 
+                    name="note" 
+                    value={formData.note} 
+                    onChange={handleChange} 
+                    placeholder={t('chk_note')}
+                    style={{ 
+                      width: '100%', padding: '16px 16px 16px 48px', borderRadius: '12px', border: '1px solid var(--clr-border)', 
+                      backgroundColor: '#283220', outline: 'none', color: 'var(--clr-text)', fontSize: '14.5px', resize: 'none' 
+                    }} 
+                  />
+                </div>
               </div>
-              <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>15 AZN</div>
-           </label>
+            </section>
+
+            {/* Receive Type */}
+            <section>
+              <h3 style={{ fontSize: '15px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--clr-rose)', marginBottom: '24px' }}>{t('chk_receive_type')}</h3>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                 <button 
+                  type="button"
+                  onClick={() => setReceiveType('delivery')}
+                  style={{
+                    flex: 1, padding: '16px', borderRadius: '12px', 
+                    background: receiveType === 'delivery' ? 'var(--clr-green)' : 'var(--clr-surface)', 
+                    color: receiveType === 'delivery' ? 'var(--clr-rose)' : 'var(--clr-text)',
+                    border: receiveType === 'delivery' ? '1px solid var(--clr-green)' : '1px solid var(--clr-border)',
+                    fontWeight: '600', fontSize: '14px', transition: 'var(--transition)'
+                  }}
+                 >
+                   <Truck size={18} style={{ display: 'block', margin: '0 auto 8px' }} />
+                   {t('chk_delivery_type')}
+                 </button>
+                 <button 
+                  type="button"
+                  onClick={() => setReceiveType('pickup')}
+                  style={{
+                    flex: 1, padding: '16px', borderRadius: '12px', 
+                    background: receiveType === 'pickup' ? 'var(--clr-green)' : 'var(--clr-surface)', 
+                    color: receiveType === 'pickup' ? 'var(--clr-rose)' : 'var(--clr-text)',
+                    border: receiveType === 'pickup' ? '1px solid var(--clr-green)' : '1px solid var(--clr-border)',
+                    fontWeight: '600', fontSize: '14px', transition: 'var(--transition)'
+                  }}
+                 >
+                   <MapPin size={18} style={{ display: 'block', margin: '0 auto 8px' }} />
+                   {t('chk_pickup')}
+                 </button>
+              </div>
+            </section>
+
+            {/* Delivery Method */}
+            {receiveType === 'delivery' && (
+              <section>
+                <h3 style={{ fontSize: '15px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--clr-rose)', marginBottom: '24px' }}>{t('chk_method')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                   <label style={{ 
+                     display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '12px', 
+                     backgroundColor: deliveryMethod === 'standard' ? 'var(--clr-surface2)' : 'var(--clr-surface)', 
+                     border: deliveryMethod === 'standard' ? '1px solid var(--clr-green)' : '1px solid var(--clr-border)', cursor: 'pointer' 
+                   }}>
+                      <input type="radio" name="delivery" checked={deliveryMethod === 'standard'} onChange={() => setDeliveryMethod('standard')} style={{ accentColor: 'var(--clr-green)', width: '18px', height: '18px', marginRight: '16px' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: 'var(--clr-white)', fontSize: '15px' }}>{/* Standard Çatdırılma removed */}</div>
+                      </div>
+                      <div style={{ fontWeight: '700', color: 'var(--clr-rose-lt)' }}>8 AZN</div>
+                   </label>
+                   <label style={{ 
+                     display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '12px', 
+                     backgroundColor: deliveryMethod === 'express' ? 'var(--clr-surface2)' : 'var(--clr-surface)', 
+                     border: deliveryMethod === 'express' ? '1px solid var(--clr-green)' : '1px solid var(--clr-border)', cursor: 'pointer' 
+                   }}>
+                      <input type="radio" name="delivery" checked={deliveryMethod === 'express'} onChange={() => setDeliveryMethod('express')} style={{ accentColor: 'var(--clr-green)', width: '18px', height: '18px', marginRight: '16px' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: 'var(--clr-white)', fontSize: '15px' }}>{/* Express Çatdırılma removed */}</div>
+                      </div>
+                      <div style={{ fontWeight: '700', color: 'var(--clr-rose-lt)' }}>15 AZN</div>
+                   </label>
+                </div>
+              </section>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="btn-primary"
+              style={{ width: '100%', height: '60px', justifyContent: 'center', fontSize: '16px', opacity: loading ? 0.7 : 1 }}
+            >
+              {loading ? '...' : t('chk_confirm')}
+            </button>
+          </form>
+
+          {/* Sifariş Özəti Summary */}
+          <aside style={{
+            background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-lg)', padding: '32px',
+            position: 'sticky', top: '110px'
+          }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--clr-rose)', marginBottom: '24px' }}>{t('chk_order')}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
+              {items.map(item => (
+                <div key={item.id} style={{ display: 'flex', gap: '16px' }}>
+                   <div style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--clr-border)' }}>
+                     <img src={item.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                   </div>
+                   <div style={{ flex: 1 }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--clr-white)', marginBottom: '4px' }}>{getLoc(item.name)}</h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--clr-muted)' }}>
+                        <span>{t('chk_qty')} {item.qty}</span>
+                        <span style={{ color: 'var(--clr-rose-lt)', fontWeight: '600' }}>{item.price * item.qty} AZN</span>
+                      </div>
+                   </div>
+                </div>
+              ))}
             </div>
-          </>
-        )}
 
-        {/* Cəm */}
-        <div style={{ borderTop: '1px solid var(--color-surface-container-highest)', paddingTop: '24px', marginBottom: '40px' }}>
-           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ color: 'var(--color-outline)' }}>{t('chk_products')}</span>
-              <span style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{total} AZN</span>
-           </div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <span style={{ color: 'var(--color-outline)' }}>{t('chk_delivery')}</span>
-              <span style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{deliveryFee} AZN</span>
-           </div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px' }}>
-              <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{t('chk_total')}:</span>
-              <span style={{ fontWeight: 'bold', color: 'var(--color-secondary)' }}>{finalTotal} AZN</span>
-           </div>
+            <div style={{ borderTop: '1px solid var(--clr-border)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14.5px', color: 'var(--clr-muted)' }}>
+                  <span>{t('chk_products')}</span>
+                  <span>{total} AZN</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14.5px', color: 'var(--clr-muted)' }}>
+                  <span>{t('chk_delivery')}</span>
+                  <span>{deliveryFee} AZN</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: '700', color: 'var(--clr-rose-lt)', marginTop: '8px' }}>
+                  <span>{t('total')}:</span>
+                  <span>{finalTotal} AZN</span>
+               </div>
+            </div>
+            
+            {/* Payment notice removed */}
+          </aside>
+
         </div>
-
-        <button 
-          type="submit" 
-          disabled={loading}
-          style={{ width: '100%', padding: '18px', backgroundColor: 'var(--color-primary)', color: 'white', borderRadius: '9999px', fontSize: '16px', fontWeight: 'bold', letterSpacing: '2px', opacity: loading ? 0.7 : 1 }}
-        >
-          {loading ? '...' : t('chk_confirm')}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

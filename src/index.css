@@ -6,7 +6,32 @@
 }
 
 :root {
-  /* Surfaces (Parchment Layers) */
+  /* DARK THEME TOKENS from Velizade */
+  --clr-bg:       #111510;
+  --clr-surface:  #181e14;
+  --clr-surface2: #1f2819;
+  --clr-border:   rgba(212,191,126,0.12);
+  --clr-rose:     #d4bf7e;  /* champagne gold — primary accent */
+  --clr-rose-lt:  #e8d49a;  /* light champagne */
+  --clr-gold:     #d4bf7e;
+  --clr-green:    #6b7554;  /* sage / olive green */
+  --clr-green-lt: #8a9870;
+  --clr-text:     #f0edd8;
+  --clr-muted:    #8f9480;
+  --clr-white:    #ffffff;
+  
+  --font-serif:   'Montserrat', serif;
+  --font-sans:    'Montserrat', system-ui, sans-serif;
+  
+  --radius-sm:    8px;
+  --radius-md:    14px;
+  --radius-lg:    22px;
+  
+  --shadow-card:  0 8px 32px rgba(0,0,0,0.5);
+  --shadow-hover: 0 16px 48px rgba(0,0,0,0.65);
+  --transition:   0.3s cubic-bezier(0.4,0,0.2,1);
+
+  /* Legacy Compat for Admin (unchanged as per user request) */
   --color-background: #FCF9F3;
   --color-surface: #FCF9F3;
   --color-surface-container-low: #F6F3ED;
@@ -14,111 +39,101 @@
   --color-surface-container-high: #EBE8E2;
   --color-surface-container-highest: #E5E2DC;
   --color-surface-container-lowest: #FFFFFF;
-
-  /* Primary (Deep Sage) */
   --color-primary: #384532;
   --color-primary-container: #4F5D48;
   --color-on-primary: #FFFFFF;
   --color-primary-fixed: #D8E7CC;
-  --color-primary-fixed-dim: #BCCBB1;
-
-  /* Secondary (Brass / Gold) */
-  --color-secondary: #76592D;
-  --color-on-secondary: #FFFFFF;
-  --color-secondary-container: #FED7A0;
-  --color-secondary-fixed: #FFDDAF;
-
-  /* Text */
   --color-on-surface: #1C1C18;
   --color-on-surface-variant: #444841;
   --color-outline: #757870;
   --color-outline-variant: #C5C8BE;
-
-  /* Action/Error */
   --color-error: #BA1A1A;
   --color-whatsapp: #25D366;
-
-  /* Typography */
-  --font-serif: 'Noto Serif', serif;
-  --font-sans: 'Plus Jakarta Sans', sans-serif;
-  
-  --primary-gradient: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
+  --color-secondary: #76592D;
 }
+
+html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-background);
-  color: var(--color-on-surface);
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  line-height: 1.6;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6, .serif {
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--clr-bg); }
+::-webkit-scrollbar-thumb { background: var(--clr-green); border-radius: 10px; }
+
+h1, h2, h3, h4, .serif {
   font-family: var(--font-serif);
-  color: var(--color-primary);
+  font-weight: 500;
+  letter-spacing: 0.05em;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
+a { color: inherit; text-decoration: none; transition: var(--transition); }
+img { display: block; max-width: 100%; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
 
-button {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-outline-variant);
-  border-radius: 4px;
-}
-
-/* Glassmorphism helpers */
+/* Helpers */
+.container { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+.section { padding: 80px 0; }
 .glass {
-  background: rgba(252, 249, 243, 0.85); /* background color with opacity */
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-/* Responsive Helpers */
-.admin-grid-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  background: rgba(17, 21, 16, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--clr-border);
 }
 
-.admin-settings-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
+/* Shared Components from Velizade */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, var(--clr-green), #4a5238);
+  color: var(--clr-rose);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 50px;
+  letter-spacing: 0.04em;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+  box-shadow: 0 4px 20px rgba(107,117,84,0.45);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(107,117,84,0.6);
+  filter: brightness(1.1);
 }
 
-.admin-orders-header {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--color-surface-container-high);
-  padding-bottom: 16px;
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 28px;
+  color: var(--clr-white);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 50px;
+  transition: background var(--transition), border-color var(--transition);
 }
+.btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+
+/* Admin Grid Compat (kept for admin) */
+.admin-grid-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.admin-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.admin-orders-header { display: flex; justify-content: space-between; border-bottom: 1px solid var(--color-surface-container-high); padding-bottom: 12px; }
+.admin-card-compact { background-color: white; border-radius: 12px; padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+.admin-metric-card { background-color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+.admin-metric-value { font-size: 24px; color: var(--color-primary); font-weight: bold; margin-top: 8px; }
 
 @media (max-width: 1024px) {
-  .admin-grid-metrics {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .admin-orders-header {
-    flex-direction: column;
-    gap: 16px;
-  }
+  .admin-grid-metrics { grid-template-columns: 1fr; gap: 16px; }
+  .admin-orders-header { flex-direction: column; gap: 12px; }
+  .admin-card-compact, .admin-metric-card { padding: 12px; }
+  .admin-metric-value { font-size: 20px; }
 }
