@@ -76,9 +76,7 @@ function ProductCard({ product, style }) {
         <img 
           src={product.img} 
           alt={getLoc(product.name)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
-          onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
-          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.5s ease' }}
         />
 
         {/* Badges */}

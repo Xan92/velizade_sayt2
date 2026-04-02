@@ -175,7 +175,7 @@ function App() {
                     }}>{itemCount}</span>
                   )}
                 </button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '12px', borderLeft: '1px solid var(--clr-border)', paddingLeft: '12px' }}>
+                <div style={{ display: window.innerWidth < 1024 ? 'none' : 'flex', alignItems: 'center', gap: '4px', marginLeft: '12px', borderLeft: '1px solid var(--clr-border)', paddingLeft: '12px' }}>
                   <a href="https://www.instagram.com/velizadeflowers?igsh=MXB5ZjdlcnpvdDBjMQ==" target="_blank" rel="noreferrer" style={{ color: 'var(--clr-muted)', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Instagram size={18} />
                   </a>
