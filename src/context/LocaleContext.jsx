@@ -199,6 +199,8 @@ const translations = {
     bouquets: "Bouquets",
     baskets: "Baskets",
     boxes: "Box Arrangements",
+    toys: "Toys",
+    bags: "Bags",
     menu: "Menu",
     search_placeholder: "Search..."
   },
@@ -298,6 +300,8 @@ const translations = {
     bouquets: "Букеты",
     baskets: "Корзины",
     boxes: "Композиции в коробках",
+    toys: "Игрушки",
+    bags: "Сумки",
     menu: "Меню",
     search_placeholder: "Поиск..."
   }
