@@ -8,6 +8,27 @@ import { db, ref, set } from '../config/firebase';
 const TELEGRAM_TOKEN = '8755927473:AAFFcAXkzWDOHty6fWckMfG21ev3BiVjOMc';
 const TELEGRAM_CHAT_ID = '1238464292';
 
+// InputField defined OUTSIDE of Checkout to prevent re-creation on every render
+// (fixes keyboard disappearing on mobile / typing freeze on desktop)
+const InputField = ({ icon: Icon, ...props }) => (
+  <div style={{ position: 'relative', width: '100%' }}>
+    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-muted)' }}>
+      <Icon size={18} aria-hidden="true" />
+    </div>
+    <input 
+      required 
+      style={{
+        width: '100%', padding: '16px 16px 16px 48px', borderRadius: '12px', 
+        border: '1px solid var(--clr-border)', backgroundColor: '#283220', 
+        outline: 'none', color: 'var(--clr-text)', fontSize: '14.5px', transition: 'var(--transition)'
+      }} 
+      onFocus={e => e.target.style.borderColor = 'var(--clr-green)'}
+      onBlur={e => e.target.style.borderColor = 'var(--clr-border)'}
+      {...props} 
+    />
+  </div>
+);
+
 function Checkout() {
   const { items, total, clearCart } = useCart();
   const { t, getLoc, lang } = useLocale();
@@ -89,24 +110,7 @@ function Checkout() {
     }
   };
 
-  const InputField = ({ icon: Icon, ...props }) => (
-    <div style={{ position: 'relative', width: '100%' }}>
-      <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-muted)' }}>
-        <Icon size={18} />
-      </div>
-      <input 
-        required 
-        style={{
-          width: '100%', padding: '16px 16px 16px 48px', borderRadius: '12px', 
-          border: '1px solid var(--clr-border)', backgroundColor: '#283220', 
-          outline: 'none', color: 'var(--clr-text)', fontSize: '14.5px', transition: 'var(--transition)'
-        }} 
-        onFocus={e => e.target.style.borderColor = 'var(--clr-green)'}
-        onBlur={e => e.target.style.borderColor = 'var(--clr-border)'}
-        {...props} 
-      />
-    </div>
-  );
+
 
   if (success) {
     return (

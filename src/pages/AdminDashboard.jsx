@@ -623,11 +623,11 @@ function AdminDashboard() {
 
                        {/* Items */}
                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-                          {order.items.map(oItem => (
+                          {order.items?.map(oItem => (
                             <div key={oItem.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'var(--color-surface-container-lowest)', padding: '8px 12px', borderRadius: '12px' }}>
                               <img src={oItem.img} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
                               <div>
-                                <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{oItem.name}</div>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{getAz(oItem.name)}</div>
                                 <div style={{ fontSize: '12px', color: 'var(--color-outline)' }}>{oItem.qty} ədəd x {oItem.price} AZN</div>
                               </div>
                             </div>
@@ -743,7 +743,7 @@ function AdminDashboard() {
                         <tr key={idx} style={{ borderBottom: '1px solid var(--color-surface-container-highest)' }}>
                           <td style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden' }}><img src={p.img} style={{ width:'100%', height:'100%', objectFit:'cover' }} /></div>
-                            <span style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{p.name}</span>
+                            <span style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{getAz(p.name)}</span>
                           </td>
                           <td style={{ padding: '12px 24px', fontWeight: 'bold', color: 'var(--color-secondary)' }}>
                              <span style={{ backgroundColor: 'var(--color-surface-container-lowest)', padding: '6px 12px', borderRadius: '9999px', fontSize: '13px' }}>{p.qty} Ədəd</span>

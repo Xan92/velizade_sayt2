@@ -76,7 +76,7 @@ function ProductCard({ product, style }) {
         <img 
           src={product.img} 
           alt={getLoc(product.name)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.5s ease' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
         />
 
         {/* Badges */}
@@ -95,6 +95,7 @@ function ProductCard({ product, style }) {
         {/* Favorite */}
         <button 
           onClick={handleLike}
+          aria-label={liked ? t('remove_fav', 'Sevimlilərdən çıxart') : t('add_fav', 'Sevimlilərə əlavə et')}
           style={{
             position: 'absolute', top: '10px', right: '10px', zIndex: 10,
             width: '34px', height: '34px', borderRadius: '50%',
@@ -105,7 +106,7 @@ function ProductCard({ product, style }) {
             transition: 'background var(--transition), transform var(--transition)'
           }}
         >
-          <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+          <Heart size={18} fill={liked ? 'currentColor' : 'none'} aria-hidden="true" />
         </button>
       </div>
 
@@ -135,6 +136,7 @@ function ProductCard({ product, style }) {
           </div>
           <button 
             onClick={handleAddToCart}
+            aria-label={t('add_to_cart', 'Səbətə əlavə et')}
             style={{
               width: '40px', height: '40px', borderRadius: '8px',
               backgroundColor: 'var(--clr-green)', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -143,7 +145,7 @@ function ProductCard({ product, style }) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--clr-green-lt)'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--clr-green)'}
           >
-            <ShoppingBag size={20} />
+            <ShoppingBag size={20} aria-hidden="true" />
           </button>
         </div>
       </div>

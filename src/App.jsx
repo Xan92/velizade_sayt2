@@ -69,7 +69,8 @@ function App() {
               <a href="tel:+994507902000" style={{ fontWeight: '600' }}>📞 +994 50 790 20 00</a>
               <select 
                 value={lang} 
-                onChange={e => setLang(e.target.value)} 
+                onChange={e => setLang(e.target.value)}
+                aria-label="Dil seçimi"
                 style={{ background: 'transparent', border: 'none', color: 'inherit', fontWeight: 'bold', cursor: 'pointer', outline: 'none' }}
               >
                 <option value="az" style={{color: 'black'}}>AZ</option>
@@ -103,6 +104,8 @@ function App() {
               {/* Hamburger (Mobile) */}
               <button 
                 onClick={() => setIsMenuOpen(true)}
+                aria-label="Menyunu aç"
+                aria-expanded={isMenuOpen}
                 style={{ display: window.innerWidth < 1024 ? 'flex' : 'none', flexDirection: 'column', gap: '5px' }}
               >
                 <div style={{ width: '22px', height: '2px', backgroundColor: 'var(--clr-text)', borderRadius: '2px' }} />
@@ -111,12 +114,13 @@ function App() {
               </button>
 
               {/* Logo */}
-              <Link to="/" style={{ 
+              <Link to="/" aria-label="Velizade — Ana Səhifə" style={{ 
                 width: '74px', height: '74px', borderRadius: '50%', overflow: 'hidden', 
                 border: '1px solid var(--clr-border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' 
               }}>
                 <img 
                   src={siteLogo || `${import.meta.env.BASE_URL}assets/logo.png`} 
+                  alt="Velizade Logo"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.35)' }} 
                 />
               </Link>
@@ -132,7 +136,10 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: window.innerWidth < 1024 ? 'auto' : '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <input 
-                    type="text" 
+                    type="text"
+                    id="site-search"
+                    role="searchbox"
+                    aria-label={t('search_placeholder', 'Axtar...')}
                     placeholder={t('search_placeholder', 'Axtar...')}
                     style={{ 
                       width: isSearchOpen ? '180px' : '0', 
@@ -147,12 +154,20 @@ function App() {
                       outline: 'none'
                     }} 
                   />
-                  <button onClick={() => setIsSearchOpen(!isSearchOpen)} style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--clr-muted)' }}>
+                  <button
+                    onClick={() => setIsSearchOpen(!isSearchOpen)}
+                    aria-label={isSearchOpen ? 'Axtarışı bağla' : 'Axtarışı aç'}
+                    aria-expanded={isSearchOpen}
+                    aria-controls="site-search"
+                    style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--clr-muted)' }}>
                     <Search size={20} />
                   </button>
                 </div>
-                <button onClick={() => navigate('/favorites')} style={{ position: 'relative', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--clr-muted)' }}>
-                  <Heart size={20} />
+                <button
+                  onClick={() => navigate('/favorites')}
+                  aria-label={`Sevimlilər${likes.length > 0 ? ` (${likes.length} məhsul)` : ''}`}
+                  style={{ position: 'relative', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--clr-muted)' }}>
+                  <Heart size={20} aria-hidden="true" />
                   {likes.length > 0 && (
                     <span style={{
                       position: 'absolute', top: '2px', right: '2px',
@@ -163,8 +178,11 @@ function App() {
                     }}>{likes.length}</span>
                   )}
                 </button>
-                <button onClick={() => navigate('/checkout')} style={{ position: 'relative', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--clr-muted)' }}>
-                  <ShoppingBag size={20} />
+                <button
+                  onClick={() => navigate('/checkout')}
+                  aria-label={`Alış-veriş səbəti${itemCount > 0 ? ` (${itemCount} məhsul)` : ''}`}
+                  style={{ position: 'relative', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: 'var(--clr-muted)' }}>
+                  <ShoppingBag size={20} aria-hidden="true" />
                   {itemCount > 0 && (
                     <span style={{
                       position: 'absolute', top: '2px', right: '2px',
@@ -212,7 +230,7 @@ function App() {
           }}>
             <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--clr-border)' }}>
               <span style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'var(--font-serif)', color: 'var(--clr-rose)' }}>{t('menu', 'Menyu')}</span>
-              <button onClick={() => setIsMenuOpen(false)}><X size={24} color="var(--clr-muted)" /></button>
+              <button onClick={() => setIsMenuOpen(false)} aria-label="Menyunu bağla"><X size={24} color="var(--clr-muted)" /></button>
             </div>
             <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column' }}>
               <button onClick={() => navigate('/')} style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--clr-text)' }}>
@@ -246,8 +264,8 @@ function App() {
             display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : 'repeat(4, 1fr)', gap: '40px'
           }}>
             <div>
-              <Link to="/" style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
-                <img src={siteLogo || `${import.meta.env.BASE_URL}assets/logo.png`} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.35)' }} />
+              <Link to="/" aria-label="Velizade — Ana Səhifə" style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+                <img src={siteLogo || `${import.meta.env.BASE_URL}assets/logo.png`} alt="Velizade Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.35)' }} />
               </Link>
               <p style={{ color: 'var(--clr-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
                 {t('footer_desc', 'Bakının ən gözəl çiçəkləri. Sizi gözəlləşdirmək üçün buradayıq.')}
