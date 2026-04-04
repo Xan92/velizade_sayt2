@@ -42,7 +42,7 @@ function Checkout() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const deliveryFee = receiveType === 'pickup' ? 0 : (deliveryMethod === 'express' ? 15 : 8);
+  const deliveryFee = 0; // Delivery is now free for all methods
   const finalTotal = total + deliveryFee;
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -246,36 +246,7 @@ function Checkout() {
               </div>
             </section>
 
-            {/* Delivery Method */}
-            {receiveType === 'delivery' && (
-              <section>
-                <h3 style={{ fontSize: '15px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--clr-rose)', marginBottom: '24px' }}>{t('chk_method')}</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                   <label style={{ 
-                     display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '12px', 
-                     backgroundColor: deliveryMethod === 'standard' ? 'var(--clr-surface2)' : 'var(--clr-surface)', 
-                     border: deliveryMethod === 'standard' ? '1px solid var(--clr-green)' : '1px solid var(--clr-border)', cursor: 'pointer' 
-                   }}>
-                      <input type="radio" name="delivery" checked={deliveryMethod === 'standard'} onChange={() => setDeliveryMethod('standard')} style={{ accentColor: 'var(--clr-green)', width: '18px', height: '18px', marginRight: '16px' }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', color: 'var(--clr-white)', fontSize: '15px' }}>{/* Standard Çatdırılma removed */}</div>
-                      </div>
-                      <div style={{ fontWeight: '700', color: 'var(--clr-rose-lt)' }}>8 AZN</div>
-                   </label>
-                   <label style={{ 
-                     display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '12px', 
-                     backgroundColor: deliveryMethod === 'express' ? 'var(--clr-surface2)' : 'var(--clr-surface)', 
-                     border: deliveryMethod === 'express' ? '1px solid var(--clr-green)' : '1px solid var(--clr-border)', cursor: 'pointer' 
-                   }}>
-                      <input type="radio" name="delivery" checked={deliveryMethod === 'express'} onChange={() => setDeliveryMethod('express')} style={{ accentColor: 'var(--clr-green)', width: '18px', height: '18px', marginRight: '16px' }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', color: 'var(--clr-white)', fontSize: '15px' }}>{/* Express Çatdırılma removed */}</div>
-                      </div>
-                      <div style={{ fontWeight: '700', color: 'var(--clr-rose-lt)' }}>15 AZN</div>
-                   </label>
-                </div>
-              </section>
-            )}
+            {/* Delivery Method removed */}
 
             <button 
               type="submit" 

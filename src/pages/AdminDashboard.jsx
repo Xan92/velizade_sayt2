@@ -77,8 +77,13 @@ function AdminDashboard() {
       // Fetch categories
       const catSnap = await get(child(ref(db), 'admin_settings/categories'));
       if (catSnap.exists()) {
-        const existing = catSnap.val().filter(c => c.id !== 'boxes');
+        // Filter out 'roses' and 'boxes'
+        const existing = catSnap.val().filter(c => c.id !== 'boxes' && c.id !== 'roses');
         let needsUpdate = false;
+        
+        // If 'roses' was found or count changed, we might want to sync back to DB later, 
+        // but for now filtering the state is enough. 
+        // Let's also check if they need patching for missing images
         const patched = existing.map(c => {
            if (!c.img) {
               const def = defaultCats.find(d => d.id === c.id);
@@ -89,7 +94,9 @@ function AdminDashboard() {
            }
            return c;
         });
-        if (needsUpdate) {
+
+        // If we filtered out 'roses' or patched, update DB
+        if (needsUpdate || catSnap.val().length !== patched.length) {
            await set(ref(db, 'admin_settings/categories'), patched);
         }
         setCategories(patched);
