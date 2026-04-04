@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useProducts } from '../hooks/useProducts';
 import { useOrders } from '../hooks/useOrders';
 import { db, ref, get, set, child } from '../config/firebase';
-import { Package, Plus, Trash2, Edit, Star, DollarSign, Image as ImageIcon, X, CheckCircle, Clock, Settings, LogOut, BarChart2, ArrowDown, ArrowUp, Menu } from 'lucide-react';
+import { Package, Plus, Trash2, Edit, Star, DollarSign, Image as ImageIcon, X, CheckCircle, Clock, Settings, LogOut, BarChart2, ArrowDown, ArrowUp, Menu, XCircle } from 'lucide-react';
 
 function AdminDashboard() {
   const { products, loading: productsLoading, deleteProduct, updateProductStatus, addProduct, editProduct, updateProductOrder } = useProducts();
@@ -52,15 +52,17 @@ function AdminDashboard() {
 
   // Custom Categories
   const defaultCats = [
-    { id: 'roses', name: 'Güllər', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEq5J-I9ld49e9RAt9aNKGa2iX7LIdndFbhDQAEz7N5nYbaJR7vuRPtrZq-yVb0lNnZ78hgUQQBKWGKBzDStgUUxA-tJTlpWD_zMgIp25P7ara3qopRM7Csiy6fgz7QBn_rKga96ZMBwqFTVpMxYpPybaHTnig0UkB6vTu14KQ8Jj1c2ssub2c-maTHWJ15kt-JQZGa1CXHItVOqeU6jtVjOqv7EQx3Xl6IToWm81ygQFF5CZXZ5IIyZ7sVr38lOU8EETHIbvyCGo' },
-    { id: 'toys', name: 'Oyuncaqlar', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAwdRTAq-itRQHDM855ClpPsg-ZOLANXiqAeFO0GcdDekrpZh1txQBwP8gObPU2XBYUEjDa8BBKBSSYgGEbKkokjnC8RCRTx2UArLPzacQbGje-utECwGUW_WxcE7IChxp4EAUR_aeb0Rdjv6OEMeqDiRjrSeSQpmVNdUVcNt6QZFngTfA_pkZa9WqYt2elBBjSX8fxlsoabT58z6XJH0A7xUp6kvf3wsExxcKUgSHeu8VlORJZoiCFN2gZ13IVNyhCDth0vFor0mo' },
-    { id: 'bags', name: 'Çantalar', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFsWhAvnDXxozZkETiw5zr9PTJv6jV6nlYt4ze7Tx-M6z4HznhB7LH0TVKBW0yO9xKw7kLTTB1pYb8eKe5KpUUhit1_wPQOphJK6dRaCsegcpLxRqowzzZyHcMbK9Ky0N0kHIyfa7qBGsTcyLdpwo8xEWHpNeQpWDZ_OFM5xg8ch9HJt04rqXdw9A_7E58F9v8rsjPQHihaV5GS6lTsMiEQHlBwEg5I8NaCSe6tYDFuIIepE0cv2z_NByP4fCub9_YfgjN3ZPcxRo' }
+    { id: 'bouquets', name: 'Buketlər' },
+    { id: 'baskets', name: 'Səbətlər' },
+    { id: 'toys', name: 'Oyuncaqlar' },
+    { id: 'bags', name: 'Çantalar' }
   ];
   const [categories, setCategories] = useState([]);
   const [newCatName, setNewCatName] = useState('');
   const [catFilter, setCatFilter] = useState('all');
   const [siteLogo, setSiteLogo] = useState(null);
   const [heroDesc, setHeroDesc] = useState('');
+  const [aboutText, setAboutText] = useState('Hər cür sifarişlər qəbul olunur');
 
   useEffect(() => {
     // Fetch password from Firebase
@@ -106,6 +108,29 @@ function AdminDashboard() {
       const heroSnap = await get(child(ref(db), 'admin_settings/cms/hero_desc'));
       if (heroSnap.exists()) {
         setHeroDesc(heroSnap.val());
+      }
+
+      // Fetch About Text
+      const aboutSnap = await get(child(ref(db), 'admin_settings/cms/about_text'));
+      if (aboutSnap.exists()) {
+        setAboutText(aboutSnap.val());
+      }
+
+      // Migration: roses → bouquets
+      const prodSnap = await get(child(ref(db), 'products'));
+      if (prodSnap.exists()) {
+        const prods = prodSnap.val();
+        const migrationUpdates = {};
+        Object.keys(prods).forEach(key => {
+          if (prods[key].category === 'roses') {
+            migrationUpdates['products/' + key + '/category'] = 'bouquets';
+          }
+        });
+        if (Object.keys(migrationUpdates).length > 0) {
+          const { update: fbUpdate } = await import('../config/firebase');
+          await fbUpdate(ref(db), migrationUpdates);
+          console.log('Migration: roses → bouquets completed for', Object.keys(migrationUpdates).length / 1, 'products');
+        }
       }
     };
     fetchPassword();
@@ -332,26 +357,40 @@ function AdminDashboard() {
     setImageFile(null);
   };
 
-  // Sıralama (Input)
-  const handleOrderChange = async (oldIndex, newOrderValue) => {
-    let newIndex = parseInt(newOrderValue) - 1; // İstifadəçi "1" yazırsa, arrayda "0" olmalıdır
+  // Sıralama (Input) — kateqoriya filtrini nəzərə alır
+  const handleOrderChange = async (filteredIndex, newOrderValue, filteredList) => {
+    const product = filteredList[filteredIndex];
+    if (!product) return;
     
-    // Yoxlamalar
-    if (isNaN(newIndex) || newIndex < 0) newIndex = 0;
-    if (newIndex >= products.length) newIndex = products.length - 1;
-    if (oldIndex === newIndex) return;
+    let newFilteredIndex = parseInt(newOrderValue) - 1;
+    if (isNaN(newFilteredIndex) || newFilteredIndex < 0) newFilteredIndex = 0;
+    if (newFilteredIndex >= filteredList.length) newFilteredIndex = filteredList.length - 1;
+    if (filteredIndex === newFilteredIndex) return;
     
-    // Array kopyasını al
+    // Bütün products massivində işləyirik
     const newArray = [...products];
+    const oldGlobalIndex = newArray.findIndex(p => p.id === product.id);
+    if (oldGlobalIndex === -1) return;
     
-    // Köhnə yerdən kəs (çıxart)
-    const [movedItem] = newArray.splice(oldIndex, 1);
+    // Filtrli siyahıdakı yeni yerin global index-ini tapırıq
+    const targetProduct = filteredList[newFilteredIndex];
+    const newGlobalIndex = newArray.findIndex(p => p.id === targetProduct.id);
     
-    // Yeni yerə yapışdır (əlavə et)
-    newArray.splice(newIndex, 0, movedItem);
+    const [movedItem] = newArray.splice(oldGlobalIndex, 1);
+    newArray.splice(newGlobalIndex, 0, movedItem);
 
-    // Bütün siyahını Firebase-ə sırayla qeyd et
     await updateProductOrder(newArray);
+  };
+
+  // About text update handler
+  const handleUpdateAboutText = async () => {
+    try {
+      await set(ref(db, 'admin_settings/cms/about_text'), aboutText);
+      alert('Haqqımızda mətni uğurla yeniləndi!');
+    } catch(err) {
+      console.error(err);
+      alert('Xəta baş verdi!');
+    }
   };
 
   if (!isAuthenticated) {
@@ -547,8 +586,8 @@ function AdminDashboard() {
                            type="number" 
                            key={`order-${p.id}-${i}`} // Key dəyişəndə input refresh olur, köhnə rəqəm ilişib qalmır
                            defaultValue={i + 1} 
-                           onBlur={(e) => handleOrderChange(i, e.target.value)}
-                           onKeyDown={(e) => { if(e.key === 'Enter') handleOrderChange(i, e.target.value); }}
+                           onBlur={(e) => handleOrderChange(i, e.target.value, filteredProducts)}
+                           onKeyDown={(e) => { if(e.key === 'Enter') handleOrderChange(i, e.target.value, filteredProducts); }}
                            style={{ width: '50px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: '1px solid var(--color-outline-variant)' }}
                            min="1"
                            max={products.length}
@@ -611,9 +650,14 @@ function AdminDashboard() {
                              <div className="admin-metric-value" style={{ color: 'var(--color-secondary)' }}>{order.totalAmount} AZN</div>
                              <div style={{ fontSize: '12px', color: 'var(--color-outline)', marginTop: '4px' }}>Çatdırılma: {order.deliveryMethod} ({order.deliveryFee} AZN)</div>
                              
-                             <div style={{ marginTop: '16px' }}>
+                             <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                 {order.status === 'pending' ? (
-                                  <button onClick={() => { if(window.confirm('Sifarişi təhvil verilmiş kimi işarələ?')) updateOrderStatus(order.firebaseId, 'completed'); }} style={{ padding: '8px 16px', backgroundColor: 'var(--color-error)', color: 'white', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Clock size={16}/> Gözləyir (Təsdiqlə)</button>
+                                  <>
+                                    <button onClick={() => { if(window.confirm('Sifarişi təhvil verilmiş kimi işarələ?')) updateOrderStatus(order.firebaseId, 'completed'); }} style={{ padding: '8px 16px', backgroundColor: 'var(--color-primary)', color: 'white', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><CheckCircle size={16}/> Təsdiqlə</button>
+                                    <button onClick={() => { if(window.confirm('Sifarişi imtina etmək istəyirsiniz?')) updateOrderStatus(order.firebaseId, 'rejected'); }} style={{ padding: '8px 16px', backgroundColor: 'var(--color-error)', color: 'white', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><XCircle size={16}/> İmtina Et</button>
+                                  </>
+                                ) : order.status === 'rejected' ? (
+                                  <div style={{ padding: '8px 16px', backgroundColor: '#fdecea', color: 'var(--color-error)', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}><XCircle size={16}/> İmtina Edildi</div>
                                 ) : (
                                   <div style={{ padding: '8px 16px', backgroundColor: 'var(--color-surface-container-low)', color: 'var(--color-primary)', borderRadius: '9999px', fontSize: '13px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.6 }}><CheckCircle size={16}/> Tamamlanıb</div>
                                 )}
@@ -642,8 +686,9 @@ function AdminDashboard() {
 
         {activeTab === 'analytics' && (
           () => {
-             // Tarixə görə süz (Filter by Date Range)
+             // Yalnız TƏSDİQLƏNMİŞ sifarişləri say (pending/rejected sayılmır)
              const filteredOrders = orders.filter(order => {
+                if (order.status !== 'completed') return false;
                 if (!analyticsDateRange.start && !analyticsDateRange.end) return true;
                 const oDate = new Date(order.createdAt).getTime();
                 let startValid = true;
@@ -793,6 +838,24 @@ function AdminDashboard() {
               />
               <button 
                 onClick={handleUpdateHeroDesc}
+                style={{ marginTop: '16px', padding: '12px 32px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}
+              >
+                Mətni Yenilə
+              </button>
+            </div>
+
+            {/* About Text CMS */}
+            <div className="admin-card-compact" style={{ gridColumn: 'span 2' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '16px' }}>Haqqımızda Mətni</h2>
+              <p style={{ fontSize: '13px', color: 'var(--color-outline)', marginBottom: '16px' }}>Saytdakı "Haqqımızda" bölməsində çıxacaq mətn.</p>
+              <textarea 
+                value={aboutText} 
+                onChange={e => setAboutText(e.target.value)} 
+                placeholder="Haqqımızda mətnini daxil edin..."
+                style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-surface-container-high)', outline: 'none', minHeight: '120px', fontSize: '15px' }} 
+              />
+              <button 
+                onClick={handleUpdateAboutText}
                 style={{ marginTop: '16px', padding: '12px 32px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}
               >
                 Mətni Yenilə

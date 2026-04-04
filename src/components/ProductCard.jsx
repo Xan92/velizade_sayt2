@@ -76,7 +76,7 @@ function ProductCard({ product, style }) {
         <img 
           src={product.img} 
           alt={getLoc(product.name)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.5s ease' }}
         />
 
         {/* Badges */}

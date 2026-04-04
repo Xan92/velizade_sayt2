@@ -109,13 +109,14 @@ function Home() {
           <h2 className="section-title">{t('collections', 'Kolleksiyalar')}</h2>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: window.innerWidth < 640 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+            gridTemplateColumns: window.innerWidth < 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
             gap: '30px',
-            maxWidth: '800px',
+            maxWidth: '900px',
             margin: '0 auto'
           }}>
             {[
-              { id: 'roses', name: t('roses'), img: `${import.meta.env.BASE_URL}assets/cat_flowers.png` },
+              { id: 'bouquets', name: t('bouquets', 'Buketlər'), img: `${import.meta.env.BASE_URL}assets/cat_flowers.png` },
+              { id: 'baskets', name: t('baskets', 'Səbətlər'), img: `${import.meta.env.BASE_URL}assets/cat_flowers.png` },
               { id: 'toys', name: t('toys'), img: `${import.meta.env.BASE_URL}assets/cute_premium_toy.png` },
               { id: 'bags', name: t('bags'), img: `${import.meta.env.BASE_URL}assets/premium_bags_cat.png` }
             ].map((cat) => (

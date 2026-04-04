@@ -20,7 +20,10 @@ function App() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [siteLogo, setSiteLogo] = useState(null);
+  const [showAbout, setShowAbout] = useState(false);
+  const [aboutText, setAboutText] = useState('Hər cür sifarişlər qəbul olunur');
 
   const isAdminPath = location.pathname.startsWith('/admin');
 
@@ -30,18 +33,29 @@ function App() {
   }, [location]);
 
   React.useEffect(() => {
-    const fetchLogo = async () => {
+    const fetchCms = async () => {
       try {
-        const snap = await get(child(ref(db), 'admin_settings/cms/logo'));
-        if (snap.exists()) setSiteLogo(snap.val());
+        const logoSnap = await get(child(ref(db), 'admin_settings/cms/logo'));
+        if (logoSnap.exists()) setSiteLogo(logoSnap.val());
+        const aboutSnap = await get(child(ref(db), 'admin_settings/cms/about_text'));
+        if (aboutSnap.exists()) setAboutText(aboutSnap.val());
       } catch (err) {
-        console.error("Error fetching logo", err);
+        console.error("Error fetching CMS", err);
       }
     };
-    fetchLogo();
+    fetchCms();
   }, []);
 
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setIsSearchOpen(false);
+    }
+  };
+
   return (
+    <>
     <div style={{ 
       minHeight: '100vh', 
       display: 'flex', 
@@ -66,7 +80,7 @@ function App() {
           }}>
             <span>🚚 {t('free_delivery_notice', 'Bakı daxilindəki çatdırılma — PULSUZ (150₼+ sifariş)')}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <a href="tel:+994507902000" style={{ fontWeight: '600' }}>📞 +994 50 790 20 00</a>
+              <a href="https://wa.me/994507902000" target="_blank" rel="noreferrer" style={{ fontWeight: '600' }}>📞 +994 50 790 20 00</a>
               <select 
                 value={lang} 
                 onChange={e => setLang(e.target.value)}
@@ -128,8 +142,8 @@ function App() {
               {/* Nav (Desktop) */}
               <nav style={{ display: window.innerWidth < 1024 ? 'none' : 'flex', alignItems: 'center', gap: '4px', marginLeft: 'auto' }}>
                 <Link to="/shop" style={{ padding: '8px 14px', fontSize: '14.5px', fontWeight: '500', color: location.pathname === '/shop' ? 'var(--clr-white)' : 'var(--clr-muted)' }}>{t('shop')}</Link>
-                <span style={{ padding: '8px 14px', fontSize: '14.5px', fontWeight: '500', color: 'var(--clr-muted)', cursor: 'pointer' }}>{t('about')}</span>
-                <span style={{ padding: '8px 14px', fontSize: '14.5px', fontWeight: '500', color: 'var(--clr-muted)', cursor: 'pointer' }}>{t('contact')}</span>
+                <span onClick={() => setShowAbout(true)} style={{ padding: '8px 14px', fontSize: '14.5px', fontWeight: '500', color: 'var(--clr-muted)', cursor: 'pointer' }}>{t('about')}</span>
+                <a href="https://wa.me/994507902000" target="_blank" rel="noreferrer" style={{ padding: '8px 14px', fontSize: '14.5px', fontWeight: '500', color: 'var(--clr-muted)' }}>{t('contact')}</a>
               </nav>
 
               {/* Actions */}
@@ -141,6 +155,9 @@ function App() {
                     role="searchbox"
                     aria-label={t('search_placeholder', 'Axtar...')}
                     placeholder={t('search_placeholder', 'Axtar...')}
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
                     style={{ 
                       width: isSearchOpen ? '180px' : '0', 
                       opacity: isSearchOpen ? 1 : 0,
@@ -240,10 +257,10 @@ function App() {
                 <Grid size={20} /> {t('shop')}
               </button>
               <div style={{ margin: '12px 24px', height: '1px', backgroundColor: 'var(--clr-border)' }} />
-              <button style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--clr-muted)' }}>
+              <a href="https://wa.me/994507902000" target="_blank" rel="noreferrer" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--clr-muted)', textDecoration: 'none' }}>
                 <Phone size={20} /> {t('contact')}
-              </button>
-              <button style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--clr-muted)' }}>
+              </a>
+              <button onClick={() => { setIsMenuOpen(false); setShowAbout(true); }} style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--clr-muted)' }}>
                 <Info size={20} /> {t('about')}
               </button>
             </div>
@@ -280,7 +297,8 @@ function App() {
             <div>
               <h4 style={{ color: 'var(--clr-white)', fontSize: '16px', marginBottom: '24px' }}>{t('shop_title', 'Mağaza')}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--clr-muted)' }}>
-                <Link to="/shop?cat=roses">{t('roses', 'Güllər')}</Link>
+                <Link to="/shop?cat=bouquets">{t('bouquets', 'Buketlər')}</Link>
+                <Link to="/shop?cat=baskets">{t('baskets', 'Səbətlər')}</Link>
                 <Link to="/shop?cat=toys">{t('toys', 'Oyuncaqlar')}</Link>
                 <Link to="/shop?cat=bags">{t('bags', 'Çantalar')}</Link>
               </div>
@@ -288,16 +306,14 @@ function App() {
             <div>
               <h4 style={{ color: 'var(--clr-white)', fontSize: '16px', marginBottom: '24px' }}>{t('company_title', 'Şirkət')}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--clr-muted)', alignItems: 'flex-start' }}>
-                <button style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>{t('about')}</button>
-                <button style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>{t('blog', 'Blog')}</button>
-                <button style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>{t('career', 'Karyera')}</button>
-                <button style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>{t('contact')}</button>
+                <button onClick={() => setShowAbout(true)} style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>{t('about')}</button>
+                <a href="https://wa.me/994507902000" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{t('contact')}</a>
               </div>
             </div>
             <div>
               <h4 style={{ color: 'var(--clr-white)', fontSize: '16px', marginBottom: '24px' }}>{t('contact')}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--clr-muted)' }}>
-                <a href="tel:+994507902000">+994 50 790 20 00</a>
+                <a href="https://wa.me/994507902000" target="_blank" rel="noreferrer">+994 50 790 20 00</a>
                 <a href="mailto:info@velizade.az">info@velizade.az</a>
                 <p style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                   <MapPin size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -318,6 +334,27 @@ function App() {
         </footer>
       )}
     </div>
+
+    {/* About Modal */}
+    {showAbout && (
+      <div onClick={() => setShowAbout(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div onClick={e => e.stopPropagation()} style={{
+          background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-lg)',
+          padding: '48px 36px', maxWidth: '560px', width: '100%', position: 'relative',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.5)'
+        }}>
+          <button onClick={() => setShowAbout(false)} style={{ position: 'absolute', top: '20px', right: '20px', color: 'var(--clr-muted)' }}><X size={24} /></button>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '28px', color: 'var(--clr-rose-lt)', marginBottom: '8px', letterSpacing: '0.05em' }}>{t('about')}</h2>
+          <div style={{ width: '60px', height: '3px', background: 'linear-gradient(90deg, var(--clr-green), var(--clr-rose))', borderRadius: '2px', marginBottom: '24px' }} />
+          <p style={{ fontSize: '16px', lineHeight: '1.8', color: 'var(--clr-text)', whiteSpace: 'pre-wrap' }}>{aboutText}</p>
+          <div style={{ marginTop: '32px', padding: '16px', backgroundColor: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--clr-border)' }}>
+            <p style={{ fontSize: '14px', color: 'var(--clr-muted)', marginBottom: '8px' }}>əlaqə üçün:</p>
+            <a href="https://wa.me/994507902000" target="_blank" rel="noreferrer" style={{ fontSize: '16px', color: 'var(--clr-rose-lt)', fontWeight: '600' }}>📱 +994 50 790 20 00 (WhatsApp)</a>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

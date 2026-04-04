@@ -10,6 +10,7 @@ function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const initCat = searchParams.get('cat') || 'all';
+  const searchQueryParam = searchParams.get('search') || '';
 
   const [activeCategory, setActiveCategory] = useState(initCat);
   const [activeColor, setActiveColor] = useState('all');
@@ -35,7 +36,7 @@ function Shop() {
 
   // Categories Hierarchy
   const catGroups = [
-    { title: t('roses', 'Güllər'), items: ['all', 'roses', 'bouquets', 'baskets'] },
+    { title: t('roses', 'Güllər'), items: ['all', 'bouquets', 'baskets'] },
     { title: t('toys', 'Oyuncaqlar'), items: ['toys'] },
     { title: t('bags', 'Çantalar'), items: ['bags'] }
   ];
@@ -45,6 +46,11 @@ function Shop() {
     if (activeCategory !== 'all' && p.category !== activeCategory) return false;
     if (activeColor !== 'all' && p.color !== activeColor) return false;
     if (p.price > maxPrice) return false;
+    // Search filter
+    if (searchQueryParam) {
+      const name = getLoc(p.name).toLowerCase();
+      if (!name.includes(searchQueryParam.toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -178,7 +184,7 @@ function Shop() {
                >
                  {t('all')}
                </button>
-               {['roses', 'bouquets', 'baskets', 'toys', 'bags'].map(catID => (
+               {['bouquets', 'baskets', 'toys', 'bags'].map(catID => (
                  <button 
                   key={catID} 
                   onClick={() => setActiveCategory(catID)}
