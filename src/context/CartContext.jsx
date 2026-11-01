@@ -4,8 +4,12 @@ const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => {
-    const saved = localStorage.getItem('velizade_cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const parsed = JSON.parse(localStorage.getItem('velizade_cart') || '[]');
+      return Array.isArray(parsed) ? parsed.filter(i => i && Number.isFinite(i.price) && i.qty > 0) : [];
+    } catch {
+      return [];
+    }
   });
 
   useEffect(() => {
@@ -13,10 +17,11 @@ export const CartProvider = ({ children }) => {
   }, [items]);
 
   const addToCart = (product, qty = 1) => {
+    if (product.price == null) return; // qiyməti olmayan məhsul WhatsApp ilə sifariş olunur
     setItems(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        return prev.map(item => 
+        return prev.map(item =>
           item.id === product.id ? { ...item, qty: item.qty + qty } : item
         );
       }
@@ -38,13 +43,24 @@ export const CartProvider = ({ children }) => {
     }));
   };
 
+  // Səbəti bazadakı cari qiymət və məhsullarla uyğunlaşdırır, dəyişiklik olubsa true qaytarır
+  const syncCart = (products) => {
+    const next = items.flatMap(item => {
+      const live = products.find(p => String(p.id) === String(item.id));
+      return live && live.price != null ? [{ ...item, name: live.name, img: live.img, price: live.price }] : [];
+    });
+    const changed = next.length !== items.length || next.some((item, i) => item.price !== items[i].price);
+    if (changed) setItems(next);
+    return changed;
+  };
+
   const clearCart = () => setItems([]);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const itemCount = items.reduce((sum, item) => sum + item.qty, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQty, clearCart, total, itemCount }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQty, clearCart, syncCart, total, itemCount }}>
       {children}
     </CartContext.Provider>
   );

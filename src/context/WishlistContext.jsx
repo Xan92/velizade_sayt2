@@ -4,8 +4,17 @@ const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
   const [likes, setLikes] = useState(() => {
-    const saved = localStorage.getItem('velizade_wishlist');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('velizade_wishlist');
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Köhnə saxta rəqəmləri (1, 2, 3) təmizləyir, yalnız həqiqi Supabase UUID-lərini saxlayır
+      return Array.isArray(parsed) 
+        ? parsed.filter(id => typeof id === 'string' && id.includes('-')) 
+        : [];
+    } catch {
+      return [];
+    }
   });
 
   useEffect(() => {
@@ -13,13 +22,20 @@ export const WishlistProvider = ({ children }) => {
   }, [likes]);
 
   const toggle = (id) => {
-    setLikes(prev => prev.includes(id) ? prev.filter(l => l !== id) : [...prev, id]);
+    const strId = String(id);
+    setLikes(prev => 
+      prev.some(l => String(l) === strId)
+        ? prev.filter(l => String(l) !== strId)
+        : [...prev, strId]
+    );
   };
 
-  const isLiked = (id) => likes.includes(id);
+  const isLiked = (id) => likes.some(l => String(l) === String(id));
+
+  const clearLikes = () => setLikes([]);
 
   return (
-    <WishlistContext.Provider value={{ likes, toggle, isLiked }}>
+    <WishlistContext.Provider value={{ likes, setLikes, toggle, isLiked, clearLikes }}>
       {children}
     </WishlistContext.Provider>
   );

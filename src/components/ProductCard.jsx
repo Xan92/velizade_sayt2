@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingBag, MessageCircle } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
+import { getThumbUrl } from '../config/imageUtils';
+import { formatPrice, showToast, whatsappLink } from '../config/format';
 import { useCart } from '../context/CartContext';
 import { useLocale } from '../context/LocaleContext';
 
@@ -11,6 +13,8 @@ function ProductCard({ product, style }) {
   const { addToCart } = useCart();
   const { t, getLoc } = useLocale();
   const liked = isLiked(product.id);
+  const name = getLoc(product.name);
+  const hasPrice = product.price != null;
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -24,59 +28,26 @@ function ProductCard({ product, style }) {
   const handleAddToCart = (e) => {
     e.stopPropagation();
     addToCart(product, 1);
-    // Simple toast or alert
-    const toast = document.createElement('div');
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.right = '20px';
-    toast.style.backgroundColor = 'var(--clr-green)';
-    toast.style.color = 'var(--clr-rose)';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '8px';
-    toast.style.zIndex = 10000;
-    toast.style.fontWeight = 'bold';
-    toast.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
-    toast.innerText = t('added', 'Səbətə əlavə edildi!');
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    showToast(t('added', 'Səbətə əlavə edildi!'));
   };
 
   return (
-    <div 
+    <div
       onClick={handleCardClick}
-      style={{ 
-        ...style, 
-        cursor: 'pointer', 
-        display: 'flex', 
-        flexDirection: 'column',
-        background: 'var(--clr-surface)',
-        border: '1px solid var(--clr-border)',
-        borderRadius: 'var(--radius-md)',
-        overflow: 'hidden',
-        transition: 'transform var(--transition), box-shadow var(--transition), border-color var(--transition)'
-      }}
-      className="product-card-hover"
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-6px)';
-        e.currentTarget.style.boxShadow = 'var(--shadow-hover)';
-        e.currentTarget.style.borderColor = 'rgba(212,191,126,0.35)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.borderColor = 'var(--clr-border)';
-      }}
+      onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) handleCardClick(); }}
+      role="link"
+      tabIndex={0}
+      aria-label={name}
+      style={style}
+      className="product-card"
     >
       {/* Image container */}
-      <div style={{
-        position: 'relative', width: '100%', aspectRatio: '1/1',
-        backgroundColor: 'var(--clr-surface2)',
-        overflow: 'hidden'
-      }}>
-        <img 
-          src={product.img} 
-          alt={getLoc(product.name)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.5s ease' }}
+      <div className="product-card-media">
+        <img
+          src={getThumbUrl(product.img)}
+          alt={name}
+          loading="lazy"
+          decoding="async"
         />
 
         {/* Badges */}
@@ -93,16 +64,16 @@ function ProductCard({ product, style }) {
         )}
 
         {/* Favorite */}
-        <button 
+        <button
           onClick={handleLike}
           aria-label={liked ? t('remove_fav', 'Sevimlilərdən çıxart') : t('add_fav', 'Sevimlilərə əlavə et')}
           style={{
             position: 'absolute', top: '10px', right: '10px', zIndex: 10,
-            width: '34px', height: '34px', borderRadius: '50%',
-            backgroundColor: liked ? 'var(--clr-green)' : 'rgba(14,11,15,0.7)',
+            width: '36px', height: '36px', borderRadius: '50%',
+            backgroundColor: liked ? 'var(--clr-rose)' : 'rgba(14,11,15,0.7)',
             backdropFilter: 'blur(6px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: liked ? 'var(--clr-rose)' : 'var(--clr-white)',
+            color: liked ? '#1a1e14' : 'var(--clr-white)',
             transition: 'background var(--transition), transform var(--transition)'
           }}
         >
@@ -111,13 +82,11 @@ function ProductCard({ product, style }) {
       </div>
 
       {/* Info */}
-      <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <h3 style={{ fontSize: '15.5px', fontWeight: '600', color: 'var(--clr-text)', marginBottom: '6px', lineHeight: '1.4' }}>
-          {getLoc(product.name)}
-        </h3>
-        <p style={{ 
-          fontSize: '13px', color: 'var(--clr-muted)', marginBottom: '14px', 
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', 
+      <div className="card-body" style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <h3 className="card-title">{name}</h3>
+        <p className="card-desc" style={{
+          fontSize: '13px', color: 'var(--clr-muted)', marginBottom: '14px',
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           overflow: 'hidden', textOverflow: 'ellipsis', minHeight: '36px',
           flex: 1
         }}>
@@ -125,28 +94,47 @@ function ProductCard({ product, style }) {
         </p>
 
         {/* Pricing & Add to cart */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-             <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--clr-rose-lt)' }}>{product.price} AZN</span>
-             {product.oldPrice && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: 'auto', paddingTop: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+             {hasPrice ? (
+               <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--clr-rose-lt)' }}>{formatPrice(product.price)} AZN</span>
+             ) : (
+               <span style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--clr-rose-lt)', lineHeight: '1.3' }}>{t('price_on_request')}</span>
+             )}
+             {hasPrice && product.oldPrice && (
                <span style={{ fontSize: '13px', color: 'var(--clr-muted)', textDecoration: 'line-through' }}>
-                 {product.oldPrice} AZN
+                 {formatPrice(product.oldPrice)} AZN
                </span>
              )}
           </div>
-          <button 
-            onClick={handleAddToCart}
-            aria-label={t('add_to_cart', 'Səbətə əlavə et')}
-            style={{
-              width: '40px', height: '40px', borderRadius: '8px',
-              backgroundColor: 'var(--clr-green)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--clr-rose)', transition: 'var(--transition)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--clr-green-lt)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--clr-green)'}
-          >
-            <ShoppingBag size={20} aria-hidden="true" />
-          </button>
+          {hasPrice ? (
+            <button
+              onClick={handleAddToCart}
+              aria-label={t('add_to_cart', 'Səbətə əlavə et')}
+              style={{
+                width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0,
+                backgroundColor: 'var(--clr-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#1a1e14', transition: 'var(--transition)'
+              }}
+            >
+              <ShoppingBag size={19} aria-hidden="true" />
+            </button>
+          ) : (
+            <a
+              href={whatsappLink(`${t('wa_product_msg')} ${name}`)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={e => e.stopPropagation()}
+              aria-label={t('order_whatsapp')}
+              style={{
+                width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0,
+                border: '1px solid var(--clr-rose)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--clr-rose-lt)'
+              }}
+            >
+              <MessageCircle size={19} aria-hidden="true" />
+            </a>
+          )}
         </div>
       </div>
     </div>

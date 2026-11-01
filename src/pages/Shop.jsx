@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, ChevronRight, X } from 'lucide-react';
+import { ChevronRight, X, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { useLocale } from '../context/LocaleContext';
-import { db, ref, get, child } from '../config/firebase';
+import { supabase } from '../config/supabase';
 
 function Shop() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initCat = searchParams.get('cat') || 'all';
   const searchQueryParam = searchParams.get('search') || '';
@@ -17,36 +18,44 @@ function Shop() {
   const [maxPrice, setMaxPrice] = useState(500);
   const [sortOption, setSortOption] = useState('default');
   const [categories, setCategories] = useState([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { t, getLoc } = useLocale();
 
   useEffect(() => {
     setActiveCategory(initCat);
+  }, [initCat]);
+
+  useEffect(() => {
     const fetchCats = async () => {
       try {
-         const snap = await get(child(ref(db), 'admin_settings/categories'));
-         if (snap.exists()) setCategories(snap.val());
+        const { data } = await supabase.from('categories').select('*').order('sort_order');
+        if (data) setCategories(data);
       } catch (e) {
-         console.error(e);
+        console.error(e);
       }
     };
     fetchCats();
-  }, [initCat]);
+  }, []);
 
   const { products, loading } = useProducts();
 
-  // Categories Hierarchy
-  const catGroups = [
-    { title: t('roses', 'Güllər'), items: ['all', 'bouquets', 'baskets'] },
-    { title: t('toys', 'Oyuncaqlar'), items: ['toys'] },
-    { title: t('bags', 'Çantalar'), items: ['bags'] }
-  ];
+  const activeCategoryName = activeCategory === 'all'
+    ? t('shop')
+    : t(activeCategory, categories.find(c => c.id === activeCategory)?.name);
+  usePageMeta(activeCategoryName);
+
+  const resetFilters = () => {
+    setActiveCategory('all');
+    setActiveColor('all');
+    setMaxPrice(500);
+    if (searchQueryParam || initCat !== 'all') navigate('/shop');
+  };
 
   // Filter & Sort Logic
   const filteredProducts = products.filter(p => {
     if (activeCategory !== 'all' && p.category !== activeCategory) return false;
     if (activeColor !== 'all' && p.color !== activeColor) return false;
     if (p.price > maxPrice) return false;
-    // Search filter
     if (searchQueryParam) {
       const name = getLoc(p.name).toLowerCase();
       if (!name.includes(searchQueryParam.toLowerCase())) return false;
@@ -54,15 +63,18 @@ function Shop() {
     return true;
   });
 
-  if (sortOption === 'price-asc') filteredProducts.sort((a,b) => a.price - b.price);
-  else if (sortOption === 'price-desc') filteredProducts.sort((a,b) => b.price - a.price);
+  // Qiyməti olmayan məhsullar qiymət sıralamasında sonda qalır
+  if (sortOption === 'price-asc') filteredProducts.sort((a,b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+  else if (sortOption === 'price-desc') filteredProducts.sort((a,b) => (b.price ?? -1) - (a.price ?? -1));
   else if (sortOption === 'name-asc') filteredProducts.sort((a,b) => getLoc(a.name).localeCompare(getLoc(b.name)));
 
   const colors = [
     { id: 'yellow', hex: '#FFEB3B', name: 'Sarı' },
     { id: 'red', hex: '#F44336', name: 'Qırmızı' },
     { id: 'purple', hex: '#9C27B0', name: 'Bənövşəyi' },
-    { id: 'blue', hex: '#2196F3', name: 'Göy' }
+    { id: 'white', hex: '#FFFFFF', name: 'Ağ' },
+    { id: 'pink', hex: '#E91E63', name: 'Çəhrayı' },
+    { id: 'orange', hex: '#E8833A', name: 'Narıncı' }
   ];
 
   return (
@@ -70,90 +82,88 @@ function Shop() {
       {/* Breadcrumb Strip */}
       <div style={{ padding: '16px 0', borderBottom: '1px solid var(--clr-border)', fontSize: '13.5px', color: 'var(--clr-muted)' }}>
         <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span onClick={() => navigate('/')} style={{ cursor: 'pointer', transition: 'var(--transition)' }} onMouseEnter={e => e.target.style.color='var(--clr-rose-lt)'} onMouseLeave={e => e.target.style.color='inherit'}>{t('home')}</span>
+          <span onClick={() => navigate('/')} style={{ cursor: 'pointer', transition: 'var(--transition)' }}>{t('home')}</span>
           <ChevronRight size={14} />
           <span style={{ color: 'var(--clr-white)', fontWeight: '500' }}>{t('shop')}</span>
         </div>
       </div>
 
-      <div className="container" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '260px 1fr', 
-        gap: '40px', 
-        paddingTop: '32px', 
-        paddingBottom: '60px',
-        alignItems: 'start'
-      }}>
-        
+      <div className="container shop-layout">
+        <button
+          className="btn-ghost shop-filter-toggle"
+          onClick={() => setFiltersOpen(o => !o)}
+          aria-expanded={filtersOpen}
+          style={{ justifyContent: 'center', gap: '10px', padding: '12px 20px' }}
+        >
+          <SlidersHorizontal size={18} /> {t('filters')}
+        </button>
+
         {/* Sidebar Filters */}
-        <aside style={{
-          position: 'sticky',
-          top: '110px',
+        <aside className={`shop-filters${filtersOpen ? ' open' : ''}`} style={{
           background: 'var(--clr-surface)',
           border: '1px solid var(--clr-border)',
           borderRadius: 'var(--radius-md)',
-          padding: '24px',
-          display: window.innerWidth < 1024 ? 'none' : 'block'
+          padding: '24px'
         }}>
-          {/* Categories Groups */}
+          {/* Categories */}
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--clr-rose)', marginBottom: '20px', letterSpacing: '0.05em' }}>{t('categories')}</h3>
-            {catGroups.map((group, gIdx) => (
-              <div key={gIdx} style={{ marginBottom: '24px' }}>
-                <h4 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--clr-muted)', marginBottom: '12px', letterSpacing: '0.1em' }}>{group.title}</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {group.items.map(catToken => {
-                    const label = catToken === 'all' ? t('all') : (t(catToken) || catToken);
-                    return (
-                      <label key={catToken} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: activeCategory === catToken ? 'var(--clr-white)' : 'var(--clr-muted)', transition: 'var(--transition)' }}>
-                        <input type="radio" name="shop-cat" value={catToken} checked={activeCategory === catToken} onChange={() => setActiveCategory(catToken)} style={{ accentColor: 'var(--clr-green)', width: '16px', height: '16px' }} />
-                        {label}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: activeCategory === 'all' ? 'var(--clr-white)' : 'var(--clr-muted)' }}>
+                <input type="radio" name="shop-cat" value="all" checked={activeCategory === 'all'} onChange={() => setActiveCategory('all')} style={{ accentColor: 'var(--clr-green)', width: '16px', height: '16px' }} />
+                {t('all', 'Hamısı')}
+              </label>
+              {categories.map(c => (
+                <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: activeCategory === c.id ? 'var(--clr-white)' : 'var(--clr-muted)' }}>
+                  <input type="radio" name="shop-cat" value={c.id} checked={activeCategory === c.id} onChange={() => setActiveCategory(c.id)} style={{ accentColor: 'var(--clr-green)', width: '16px', height: '16px' }} />
+                  {t(c.id, c.name)}
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Price Range */}
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--clr-muted)', marginBottom: '16px' }}>{t('price_range_title', 'Qiymət Aralığı')}</h3>
-            <input 
-              type="range" min="0" max="1000" value={maxPrice} step="10" 
+            <input
+              type="range" min="0" max="500" value={maxPrice} step="10"
               onChange={e => setMaxPrice(Number(e.target.value))}
-              style={{ width: '100%', accentColor: 'var(--clr-green)', marginBottom: '12px' }} 
+              style={{ width: '100%', accentColor: 'var(--clr-green)', marginBottom: '12px' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--clr-rose-lt)', fontWeight: '600' }}>
-              <span>0₼</span>
-              <span>{maxPrice}₼</span>
+              <span>0 AZN</span>
+              <span>{maxPrice} AZN</span>
             </div>
           </div>
 
           {/* Color Filter */}
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--clr-muted)', marginBottom: '16px' }}>{t('color_filter', 'Rəng Seçimi')}</h3>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-               <button 
+            <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--clr-muted)', marginBottom: '16px' }}>{t('color_filter', 'Rəng')}</h3>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+               <button
                 onClick={() => setActiveColor('all')}
-                style={{ 
+                style={{
                   width: '32px', height: '32px', borderRadius: '50%', border: activeColor === 'all' ? '2px solid var(--clr-rose)' : '1px solid var(--clr-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent'
                 }}
-                title="Hamısı"
+                title={t('all')}
+                aria-label={t('all')}
+                aria-pressed={activeColor === 'all'}
                >
                  <X size={14} color="var(--clr-muted)" />
                </button>
                {colors.map(c => (
-                 <button 
+                 <button
                   key={c.id}
                   onClick={() => setActiveColor(c.id)}
-                  style={{ 
+                  style={{
                     width: '32px', height: '32px', borderRadius: '50%', backgroundColor: c.hex,
                     border: activeColor === c.id ? '2px solid var(--clr-white)' : '2px solid transparent',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)', transition: 'var(--transition)'
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                   }}
                   title={c.name}
+                  aria-label={c.name}
+                  aria-pressed={activeColor === c.id}
                  />
                ))}
             </div>
@@ -161,8 +171,8 @@ function Shop() {
 
           <div>
              <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--clr-muted)', marginBottom: '16px' }}>{t('sort_title', 'Çeşidlə')}</h3>
-             <select 
-               value={sortOption} 
+             <select
+               value={sortOption}
                onChange={e => setSortOption(e.target.value)}
                style={{ width: '100%', background: 'var(--clr-surface2)', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius-sm)', color: 'var(--clr-text)', padding: '10px 12px', fontSize: '14px', outline: 'none' }}
              >
@@ -174,53 +184,26 @@ function Shop() {
           </div>
         </aside>
 
-        {/* Mobile Filter Button Area */}
-        {window.innerWidth < 1024 && (
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px' }} className="custom-scrollbar">
-               <button 
-                onClick={() => setActiveCategory('all')}
-                style={{ padding: '10px 20px', background: activeCategory === 'all' ? 'var(--clr-green)' : 'var(--clr-surface)', border: activeCategory === 'all' ? 'none' : '1px solid var(--clr-border)', borderRadius: '25px', color: activeCategory === 'all' ? 'var(--clr-rose)' : 'var(--clr-text)', fontSize: '13.5px', whiteSpace: 'nowrap', fontWeight: '600' }}
-               >
-                 {t('all')}
-               </button>
-               {['bouquets', 'baskets', 'toys', 'bags'].map(catID => (
-                 <button 
-                  key={catID} 
-                  onClick={() => setActiveCategory(catID)}
-                  style={{ padding: '10px 20px', background: activeCategory === catID ? 'var(--clr-green)' : 'var(--clr-surface)', border: activeCategory === catID ? 'none' : '1px solid var(--clr-border)', borderRadius: '25px', color: activeCategory === catID ? 'var(--clr-rose)' : 'var(--clr-text)', fontSize: '13.5px', whiteSpace: 'nowrap', fontWeight: '600' }}
-                 >
-                   {t(catID) || catID}
-                 </button>
-               ))}
-            </div>
-          </div>
-        )}
-
         {/* Product Grid Main */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-             <h2 style={{ fontSize: '22px', fontWeight: '500', color: 'var(--clr-white)', textTransform: 'capitalize' }}>
-               {activeCategory === 'all' ? t('shop') : (t(activeCategory) || getLoc(categories.find(c => c.id === activeCategory)?.name) || activeCategory)}
-             </h2>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', marginBottom: '28px' }}>
+             <h1 className="display-title" style={{ fontSize: 'clamp(1.9rem, 3vw, 2.6rem)' }}>
+               {searchQueryParam ? `“${searchQueryParam}”` : activeCategoryName}
+             </h1>
              <span style={{ fontSize: '13.5px', color: 'var(--clr-muted)' }}>{filteredProducts.length} {t('product_found', 'məhsul tapıldı')}</span>
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', marginTop: '80px' }}>
-               <p style={{ fontSize: '16px', color: 'var(--clr-rose-lt)' }}>{t('loading', 'Yüklənir...')}</p>
+            <div className="products-grid">
+              {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton" />)}
             </div>
           ) : filteredProducts.length === 0 ? (
             <div style={{ textAlign: 'center', marginTop: '80px', color: 'var(--clr-muted)' }}>
-               <div style={{ fontSize: '48px', marginBottom: '20px' }}>🌸</div>
-               <p>{t('no_product', 'Təəssüf ki, axtarışınıza uyğun məhsul tapılmadı.')}</p>
+               <p style={{ marginBottom: '24px' }}>{t('no_product', 'Təəssüf ki, axtarışınıza uyğun məhsul tapılmadı.')}</p>
+               <button onClick={resetFilters} className="btn-ghost">{t('clear_filters')}</button>
             </div>
           ) : (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', 
-              gap: '24px' 
-            }}>
+            <div className="products-grid">
               {filteredProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
