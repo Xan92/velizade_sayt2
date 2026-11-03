@@ -2,6 +2,9 @@
 
 RewriteEngine On
 
+# SSL sertifikatının yoxlama faylları yönləndirilmir
+RewriteRule ^\.well-known/ - [L]
+
 # Həmişə https://aliza.az (www-suz)
 RewriteCond %{HTTPS} off [OR]
 RewriteCond %{HTTP_HOST} ^www\. [NC]

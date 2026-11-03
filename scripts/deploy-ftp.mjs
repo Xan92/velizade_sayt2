@@ -33,7 +33,9 @@ if (!fs.existsSync(path.join(LOCAL_DIR, 'index.html'))) {
 }
 
 const remoteDir = env.FTP_DIR || 'public_html';
-const client = new Client(60000);
+// Hostinq serveri passiv rejimdə daxili şəbəkə ünvanını (192.168...) bildirir;
+// bu seçimlə kitabxana həmin ünvanı qoşulduğumuz server IP-si ilə əvəz edir
+const client = new Client(60000, { allowSeparateTransferHost: true });
 
 try {
   await client.access({
@@ -63,7 +65,9 @@ try {
   console.log('\nSayt yeniləndi: https://aliza.az\n');
 } catch (err) {
   console.error('\nYükləmə alınmadı:', err.message);
-  if (/TLS|SSL|certificate|AUTH/i.test(err.message)) {
+  if (/^530/.test(err.message)) {
+    console.error('İstifadəçi adı və ya şifrə səhvdir. Hostinq panelində "FTP hesabları" bölməsindəki adı və şifrəni yoxlayın.');
+  } else if (/TLS|SSL|certificate/i.test(err.message)) {
     console.error('Hostinq şifrəli FTP-ni dəstəkləmirsə, .env.deploy faylına FTP_SECURE=false yazın.');
   }
   process.exitCode = 1;
