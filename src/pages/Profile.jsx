@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
-import { formatPrice } from '../config/format';
+import { formatPrice, isValidAzPhone } from '../config/format';
 import { Package, LogOut, ShieldCheck } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
 
@@ -51,6 +51,10 @@ function Profile() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (formData.phone.trim() && !isValidAzPhone(formData.phone)) {
+      alert('Nömrə düzgün qeyd edilməyib. Nömrə 050, 051, 010, 055, 099, 070 və ya 077 ilə başlamalıdır.');
+      return;
+    }
     setSaving(true);
     try {
       await updateProfile(formData);
@@ -116,7 +120,7 @@ function Profile() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', color: 'var(--clr-muted)', marginBottom: '6px' }}>Telefon Nömrəsi</label>
-                <input type="tel" placeholder="+994..." value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--clr-border)', backgroundColor: '#283220', color: 'var(--clr-text)', outline: 'none' }} />
+                <input type="tel" placeholder="050 123 45 67" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--clr-border)', backgroundColor: '#283220', color: 'var(--clr-text)', outline: 'none' }} />
               </div>
 
               <div>

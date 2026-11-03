@@ -6,7 +6,7 @@ import { useLocale } from '../context/LocaleContext';
 import { supabase } from '../config/supabase';
 import { siteConfig } from '../config/siteConfig';
 import { getThumbUrl } from '../config/imageUtils';
-import { formatPrice, whatsappLink } from '../config/format';
+import { formatPrice, whatsappLink, isValidAzPhone } from '../config/format';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useProducts } from '../hooks/useProducts';
 import { ShoppingBag, Truck, User, Phone, MapPin, Calendar, Clock, Edit3, CheckCircle, ChevronRight, Trash2, Plus, Minus, Tag, MessageCircle } from 'lucide-react';
@@ -19,7 +19,7 @@ const fieldStyle = {
   outline: 'none', color: 'var(--clr-text)', fontSize: '14.5px', transition: 'var(--transition)'
 };
 
-const InputField = ({ icon: Icon, ...props }) => (
+const InputField = ({ icon: Icon, onBlur, ...props }) => (
   <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
     <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-muted)', pointerEvents: 'none' }}>
       <Icon size={18} aria-hidden="true" />
@@ -29,8 +29,8 @@ const InputField = ({ icon: Icon, ...props }) => (
       className="store-input"
       style={fieldStyle}
       onFocus={e => e.target.style.borderColor = 'var(--clr-rose)'}
-      onBlur={e => e.target.style.borderColor = 'var(--clr-border)'}
       {...props}
+      onBlur={e => { e.target.style.borderColor = 'var(--clr-border)'; onBlur?.(e); }}
     />
   </div>
 );
@@ -98,6 +98,8 @@ function Checkout() {
   const [success, setSuccess] = useState(false);
   const [orderCode, setOrderCode] = useState(null);
   const [formError, setFormError] = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const phoneInvalid = phoneTouched && formData.phone.trim() !== '' && !isValidAzPhone(formData.phone);
 
   // Səbətdəki köhnə qiymətlər və satışdan çıxmış məhsullar yenilənir
   useEffect(() => {
@@ -129,7 +131,8 @@ function Checkout() {
     if (items.length === 0 || loading) return;
 
     setFormError('');
-    if (formData.phone.replace(/\D/g, '').length < 9) {
+    if (!isValidAzPhone(formData.phone)) {
+      setPhoneTouched(true);
       setFormError(t('chk_phone_invalid'));
       return;
     }
@@ -166,6 +169,8 @@ function Checkout() {
       } else if (reason.includes('invalid_promo')) {
         handleRemovePromo();
         setFormError(t('chk_promo_invalid'));
+      } else if (reason.includes('invalid_phone')) {
+        setFormError(t('chk_phone_invalid'));
       } else if (reason.includes('invalid_date')) {
         setFormError(t('chk_date_invalid'));
       } else {
@@ -262,7 +267,10 @@ function Checkout() {
               <h3 style={sectionTitle}>{t('chk_info')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <InputField icon={User} name="name" autoComplete="name" aria-label={t('chk_name')} value={formData.name} onChange={handleChange} placeholder={t('chk_name')} />
-                <InputField icon={Phone} type="tel" name="phone" autoComplete="tel" inputMode="tel" aria-label={t('chk_phone')} value={formData.phone} onChange={handleChange} placeholder={t('chk_phone')} />
+                <InputField icon={Phone} type="tel" name="phone" autoComplete="tel" inputMode="tel" aria-label={t('chk_phone')} value={formData.phone} onChange={handleChange} onBlur={() => setPhoneTouched(true)} aria-invalid={phoneInvalid} aria-describedby="phone-hint" placeholder={t('chk_phone')} />
+                {phoneInvalid && (
+                  <p id="phone-hint" role="alert" style={{ color: '#ff8585', fontSize: '13px', marginTop: '-8px' }}>{t('chk_phone_invalid')}</p>
+                )}
                 {receiveType === 'delivery' && (
                   <InputField icon={MapPin} name="address" autoComplete="street-address" aria-label={t('chk_address')} value={formData.address} onChange={handleChange} placeholder={t('chk_address')} />
                 )}

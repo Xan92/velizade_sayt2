@@ -6,6 +6,10 @@ export const formatPrice = (value) => {
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
 };
 
+// Azərbaycan mobil nömrəsi: 050, 051, 010, 055, 099, 070, 077 (+994 ilə və ya onsuz)
+export const isValidAzPhone = (value) =>
+  /^(50|51|10|55|99|70|77)\d{7}$/.test(String(value || '').replace(/\D/g, '').replace(/^(994|0)/, ''));
+
 export const whatsappLink = (text) => `${siteConfig.whatsappUrl}?text=${encodeURIComponent(text)}`;
 
 export const showToast = (message) => {

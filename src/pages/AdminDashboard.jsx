@@ -5,7 +5,7 @@ import { supabase } from '../config/supabase';
 import { useAuth } from '../context/AuthContext';
 import { getAssetUrl } from '../config/imageUtils';
 import { Link } from 'react-router-dom';
-import { Package, Plus, Trash2, Edit, Star, DollarSign, X, CheckCircle, Settings, LogOut, BarChart2, XCircle, Eye, EyeOff, Store, Phone, MessageCircle, RotateCcw, Search } from 'lucide-react';
+import { Package, Plus, Trash2, Edit, Star, DollarSign, X, CheckCircle, Settings, LogOut, BarChart2, XCircle, Eye, EyeOff, Store, Phone, MessageCircle, RotateCcw, Search, Tag } from 'lucide-react';
 
 const slugify = (text) => text.toLowerCase()
   .replace(/ə/g, 'e').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u')
@@ -85,6 +85,8 @@ function AdminDashboard() {
   const [productSearch, setProductSearch] = useState('');
   const [noPriceOnly, setNoPriceOnly] = useState(false);
   const [orderFilter, setOrderFilter] = useState('pending');
+  const [promos, setPromos] = useState([]);
+  const [promoForm, setPromoForm] = useState({ code: '', type: 'percent', value: '', days: '7' });
   const [heroDesc, setHeroDesc] = useState('');
   const [aboutText, setAboutText] = useState('');
 
@@ -104,6 +106,56 @@ function AdminDashboard() {
     };
     fetchAdminData();
   }, [session]);
+
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'promos') return;
+    supabase.from('promo_codes').select('*').order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) alert('Promokodlar yüklənmədi: ' + error.message);
+        else setPromos(data || []);
+      });
+  }, [isAdmin, activeTab]);
+
+  const handleAddPromo = async (e) => {
+    e.preventDefault();
+    const code = promoForm.code.trim().toUpperCase();
+    const value = parseFloat(promoForm.value);
+    const days = parseInt(promoForm.days, 10);
+    if (!/^[A-Z0-9]{3,30}$/.test(code)) return alert('Kod 3-30 simvol olmalıdır: yalnız hərf (A-Z) və rəqəm.');
+    if (!(value > 0) || (promoForm.type === 'percent' && value > 100)) return alert('Endirimi düzgün yazın.');
+    if (promoForm.days !== '' && !(days > 0)) return alert('Gün sayını düzgün yazın və ya müddətsiz üçün boş saxlayın.');
+
+    const row = {
+      code,
+      discount_percent: promoForm.type === 'percent' ? value : null,
+      discount_fixed: promoForm.type === 'fixed' ? value : null,
+      active: true,
+      expires_at: promoForm.days === '' ? null : new Date(Date.now() + days * 86400000).toISOString()
+    };
+    const { data, error } = await supabase.from('promo_codes').insert([row]).select().single();
+    if (error) return alert(error.code === '23505' ? 'Bu kod artıq var.' : 'Xəta: ' + error.message);
+    setPromos(prev => [data, ...prev]);
+    setPromoForm({ code: '', type: 'percent', value: '', days: '7' });
+  };
+
+  const handleTogglePromo = async (promo) => {
+    const { error } = await supabase.from('promo_codes').update({ active: !promo.active }).eq('code', promo.code);
+    if (error) return alert('Xəta: ' + error.message);
+    setPromos(prev => prev.map(p => p.code === promo.code ? { ...p, active: !p.active } : p));
+  };
+
+  const handleDeletePromo = async (promo) => {
+    if (!window.confirm(`${promo.code} kodu silinsin?`)) return;
+    const { error } = await supabase.from('promo_codes').delete().eq('code', promo.code);
+    if (error) return alert('Xəta: ' + error.message);
+    setPromos(prev => prev.filter(p => p.code !== promo.code));
+  };
+
+  const promoStatus = (promo) => {
+    if (!promo.active) return ['Söndürülüb', 'var(--color-outline)'];
+    if (promo.expires_at && new Date(promo.expires_at) < new Date()) return ['Vaxtı bitib', 'var(--color-error)'];
+    return ['Aktiv', 'var(--color-primary)'];
+  };
 
   const notifyResult = (ok) => {
     if (!ok) alert('Əməliyyat alınmadı. İnterneti və icazələri yoxlayıb yenidən cəhd edin.');
@@ -359,6 +411,9 @@ function AdminDashboard() {
           </button>
           <button onClick={() => setActiveTab('analytics')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'analytics' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'analytics' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
             <BarChart2 size={20} /> Analitika
+          </button>
+          <button onClick={() => setActiveTab('promos')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'promos' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'promos' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
+            <Tag size={20} /> Promokodlar
           </button>
           <button onClick={() => setActiveTab('settings')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: activeTab === 'settings' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'settings' ? 'white' : 'var(--color-on-surface)', borderRadius: '12px', fontWeight: 'bold' }}>
             <Settings size={20} /> Tənzimləmələr
@@ -701,6 +756,67 @@ function AdminDashboard() {
              );
           }
         )()}
+
+        {activeTab === 'promos' && (
+          <div style={{ maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <h1 style={{ fontSize: '24px', color: 'var(--color-primary)', fontWeight: 'bold', fontFamily: 'var(--font-serif)' }}>Promokodlar</h1>
+
+            <form onSubmit={handleAddPromo} className="admin-card-compact" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: '2 1 180px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Kod (müştəriyə verəcəyiniz söz)</label>
+                <input required value={promoForm.code} onChange={e => setPromoForm({ ...promoForm, code: e.target.value.toUpperCase() })} placeholder="Məs: NOVRUZ15" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', textTransform: 'uppercase' }} />
+              </div>
+              <div style={{ flex: '1 1 140px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Endirim növü</label>
+                <select value={promoForm.type} onChange={e => setPromoForm({ ...promoForm, type: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                  <option value="percent">Faiz (%)</option>
+                  <option value="fixed">Məbləğ (AZN)</option>
+                </select>
+              </div>
+              <div style={{ flex: '1 1 100px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Endirim</label>
+                <input required type="number" min="0.01" step="0.01" value={promoForm.value} onChange={e => setPromoForm({ ...promoForm, value: e.target.value })} placeholder={promoForm.type === 'percent' ? '10' : '20'} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
+              </div>
+              <div style={{ flex: '1 1 120px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Neçə gün aktiv</label>
+                <input type="number" min="1" step="1" value={promoForm.days} onChange={e => setPromoForm({ ...promoForm, days: e.target.value })} placeholder="Boş: müddətsiz" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
+              </div>
+              <button type="submit" style={{ padding: '11px 24px', borderRadius: '9999px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 'bold' }}>Yarat</button>
+            </form>
+
+            <div style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)', overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+                <thead style={{ backgroundColor: 'var(--color-surface-container-low)' }}>
+                  <tr>
+                    {['Kod', 'Endirim', 'Bitmə vaxtı', 'İstifadə', 'Status', ''].map(h => <th key={h} style={{ padding: '12px 16px', color: 'var(--color-outline)' }}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {promos.length === 0 ? (
+                    <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: 'var(--color-outline)' }}>Hələ promokod yoxdur.</td></tr>
+                  ) : promos.map(promo => {
+                    const [statusText, statusColor] = promoStatus(promo);
+                    const used = orders.filter(o => (o.customer.note || '').includes(`[Promokod: ${promo.code}]`)).length;
+                    return (
+                      <tr key={promo.code} style={{ borderTop: '1px solid var(--color-surface-container-highest)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 'bold', letterSpacing: '0.05em' }}>{promo.code}</td>
+                        <td style={{ padding: '12px 16px' }}>{promo.discount_percent != null ? `${promo.discount_percent}%` : `${promo.discount_fixed} AZN`}</td>
+                        <td style={{ padding: '12px 16px' }}>{promo.expires_at ? new Date(promo.expires_at).toLocaleString('az-AZ', { dateStyle: 'short', timeStyle: 'short' }) : 'Müddətsiz'}</td>
+                        <td style={{ padding: '12px 16px' }}>{used} sifariş</td>
+                        <td style={{ padding: '12px 16px', fontWeight: 'bold', color: statusColor }}>{statusText}</td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button onClick={() => handleTogglePromo(promo)} style={{ padding: '6px 14px', borderRadius: '9999px', border: '1px solid var(--color-outline-variant)', fontWeight: 'bold', fontSize: '12px' }}>{promo.active ? 'Söndür' : 'Aktiv et'}</button>
+                          <button onClick={() => handleDeletePromo(promo)} aria-label={`${promo.code} sil`} style={{ color: 'var(--color-error)', padding: '6px', marginLeft: '6px' }}><Trash2 size={16} /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--color-outline)' }}>"İstifadə" sütunu bu promokodla verilmiş bütün sifarişləri sayır. Vaxtı bitmiş və ya söndürülmüş kod saytda qəbul olunmur.</p>
+          </div>
+        )}
 
         {activeTab === 'settings' && (
           <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
